@@ -7,25 +7,14 @@ export function ErrorBanner({ message, onRetry }: ErrorBannerProps) {
   return (
     <div
       role="alert"
-      style={{
-        borderRadius: '0.75rem',
-        padding: '0.85rem 1rem',
-        backgroundColor: 'rgba(220, 38, 38, 0.08)',
-        border: '1px solid rgba(220, 38, 38, 0.25)',
-        color: '#991b1b',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: '1rem'
-      }}
+      className="glass flex items-center justify-between gap-4 border border-ruby/30 bg-ruby/10 px-4 py-3 text-sm text-white"
     >
-      <span style={{ fontWeight: 600 }}>{message}</span>
+      <span className="font-medium">{message}</span>
       {onRetry && (
         <button
           type="button"
           onClick={onRetry}
-          className="secondary"
-          style={{ backgroundColor: '#fee2e2', color: '#b91c1c' }}
+          className="btn-secondary rounded-full bg-white/10 px-3 py-1 text-xs"
         >
           Retry
         </button>

@@ -1,17 +1,16 @@
 import { useEffect, useState } from 'react';
-import type { Competitor, CompetitorComparisonResponse, CompetitorCreate, SentimentSummary } from '#types';
-import {
-  createCompetitor,
-  deleteCompetitor,
-  getCompetitorComparison,
-  listCompetitors,
-  updateCompetitor
-} from '../lib/api';
-import Loading from '../components/Loading';
-import ErrorBanner from '../components/ErrorBanner';
+import { useQueryClient } from '@tanstack/react-query';
+import { Award, Scale, Users } from 'lucide-react';
+import type { Competitor, CompetitorCreate, SentimentSummary } from '#types';
+import { useCompetitors, useCompetitorComparison } from '../lib/useApi';
+import { formatNumber, formatPercent, sentimentBadgeBg } from '../lib/format';
+import Card from '../components/Card';
 import EmptyState from '../components/EmptyState';
+import ErrorBanner from '../components/ErrorBanner';
+import Loader from '../components/Loader';
+import ConfirmModal from '../components/ConfirmModal';
 
-const defaultForm: CompetitorCreate = {
+const initialForm: CompetitorCreate = {
   name: '',
   url: '',
   description: '',
@@ -19,265 +18,211 @@ const defaultForm: CompetitorCreate = {
 };
 
 export default function CompetitorsPage() {
-  const [competitors, setCompetitors] = useState<Competitor[]>([]);
+  const queryClient = useQueryClient();
+  const { list, create, remove } = useCompetitors();
+  const [form, setForm] = useState(initialForm);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [form, setForm] = useState<CompetitorCreate>(defaultForm);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [comparison, setComparison] = useState<CompetitorComparisonResponse | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Competitor | null>(null);
 
-  const loadCompetitors = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await listCompetitors({ page_size: 50 });
-      setCompetitors(response.items);
-      if (!selectedId && response.items.length) {
-        setSelectedId(response.items[0].competitor_id);
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to load competitors';
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: comparison, isLoading: comparisonLoading, refetch } = useCompetitorComparison(selectedId ?? undefined);
 
   useEffect(() => {
-    void loadCompetitors();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleChange = (evt: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = evt.target;
-    if (name === 'tags') {
-      setForm((prev) => ({ ...prev, tags: value.split(',').map((tag) => tag.trim()).filter(Boolean) }));
-    } else {
-      setForm((prev) => ({ ...prev, [name]: value }));
+    const items = list.data?.items ?? [];
+    if (!selectedId && items.length) {
+      setSelectedId(items[0].competitor_id);
     }
-  };
+  }, [list.data?.items, selectedId]);
 
-  const handleCreate = async (evt: React.FormEvent) => {
-    evt.preventDefault();
-    setSaving(true);
-    setError(null);
-    try {
-      const payload = await createCompetitor({ ...form, tags: form.tags?.filter(Boolean) });
-      setCompetitors((prev) => [payload, ...prev]);
-      setSelectedId(payload.competitor_id);
-      setForm(defaultForm);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to create competitor';
-      setError(message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleUpdate = async () => {
-    if (!selectedId) return;
-    const target = competitors.find((item) => item.competitor_id === selectedId);
-    if (!target) return;
-    setSaving(true);
-    setError(null);
-    try {
-      const updated = await updateCompetitor(selectedId, {
-        name: target.name,
-        url: target.url,
-        description: target.description,
-        tags: target.tags
-      });
-      setCompetitors((prev) => prev.map((item) => (item.competitor_id === selectedId ? updated : item)));
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to update competitor';
-      setError(message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Remove this competitor? Historical comparisons remain unaffected.')) {
-      return;
-    }
-    setSaving(true);
-    setError(null);
-    try {
-      await deleteCompetitor(id);
-      setCompetitors((prev) => prev.filter((item) => item.competitor_id !== id));
-      if (selectedId === id) {
-        setSelectedId(null);
-        setComparison(null);
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    create.mutate(form, {
+      onSuccess: (created) => {
+        setForm(initialForm);
+        setSelectedId(created.competitor_id);
+        queryClient.invalidateQueries({ queryKey: ['competitor-comparison'] });
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to delete competitor';
-      setError(message);
-    } finally {
-      setSaving(false);
-    }
+    });
   };
 
-  const handleCompare = async (id: string) => {
-    setError(null);
-    setComparison(null);
-    setLoading(true);
-    try {
-      const response = await getCompetitorComparison(id);
-      setComparison(response);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch comparison';
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
+  const handleCompare = (id: string) => {
+    setSelectedId(id);
+    refetch();
   };
-
-  const selectedCompetitor = selectedId ? competitors.find((item) => item.competitor_id === selectedId) : null;
 
   return (
-    <div className="stack">
-      <header>
-        <h2 style={{ margin: 0 }}>Competitors</h2>
-        <p style={{ margin: '0.35rem 0 0', color: '#475569' }}>
-          Track competing products and benchmark their sentiment and topic share against your own.
+    <div className="space-y-6">
+      <header className="flex flex-col gap-2">
+        <h1 className="text-3xl font-semibold text-gradient">Competitors</h1>
+        <p className="max-w-2xl text-sm text-white/65">
+          Benchmark your experience against alternatives. Track how sentiment, topics, and share-of-voice evolve for every competitor.
         </p>
       </header>
 
-      {error && <ErrorBanner message={error} onRetry={() => loadCompetitors()} />}
+      {list.error && <ErrorBanner message={list.error.message} />}
 
-      <form className="surface" onSubmit={handleCreate}>
-        <h3 className="section-title">Add a competitor</h3>
-        <label style={{ display: 'grid', gap: '0.35rem' }}>
-          Name
-          <input name="name" required placeholder="VoicePulse" value={form.name} onChange={handleChange} />
-        </label>
-        <label style={{ display: 'grid', gap: '0.35rem' }}>
-          URL
-          <input name="url" placeholder="https://example.com" value={form.url ?? ''} onChange={handleChange} />
-        </label>
-        <label style={{ display: 'grid', gap: '0.35rem' }}>
-          Description
-          <textarea name="description" rows={3} placeholder="What do they do? Who do they serve?" value={form.description ?? ''} onChange={handleChange} />
-        </label>
-        <label style={{ display: 'grid', gap: '0.35rem' }}>
-          Tags (comma separated)
-          <input name="tags" placeholder="analytics, enterprise" value={form.tags?.join(', ') ?? ''} onChange={handleChange} />
-        </label>
-        <button type="submit" disabled={saving}>
-          {saving ? 'Saving...' : 'Add competitor'}
-        </button>
-      </form>
+      <Card title="Add competitor" eyebrow="Manual entry">
+        <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
+          <label className="flex flex-col gap-2 text-xs uppercase tracking-wide text-white/60">
+            Name
+            <input
+              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white focus-visible:ring-emerald"
+              name="name"
+              value={form.name}
+              onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+              required
+            />
+          </label>
+          <label className="flex flex-col gap-2 text-xs uppercase tracking-wide text-white/60">
+            Website
+            <input
+              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white focus-visible:ring-emerald"
+              name="url"
+              value={form.url ?? ''}
+              onChange={(event) => setForm((prev) => ({ ...prev, url: event.target.value }))}
+            />
+          </label>
+          <label className="md:col-span-2 flex flex-col gap-2 text-xs uppercase tracking-wide text-white/60">
+            Description
+            <textarea
+              className="min-h-[90px] rounded-3xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus-visible:ring-emerald"
+              name="description"
+              value={form.description ?? ''}
+              onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
+              placeholder="How do they position themselves?"
+            />
+          </label>
+          <label className="md:col-span-2 flex flex-col gap-2 text-xs uppercase tracking-wide text-white/60">
+            Tags (comma separated)
+            <input
+              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white focus-visible:ring-emerald"
+              name="tags"
+              value={form.tags?.join(', ') ?? ''}
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  tags: event.target.value.split(',').map((tag) => tag.trim()).filter(Boolean)
+                }))
+              }
+            />
+          </label>
+          <div className="md:col-span-2">
+            <button
+              type="submit"
+              className="btn-primary rounded-full px-6 py-3 text-sm"
+              disabled={create.isPending}
+            >
+              {create.isPending ? 'Saving...' : 'Add competitor'}
+            </button>
+          </div>
+        </form>
+      </Card>
 
-      <div className="surface">
-        <h3 className="section-title">Competitor roster</h3>
-        {loading && <Loading label="Loading competitors..." />}
-        {!loading && competitors.length === 0 && (
-          <EmptyState title="No competitors yet" description="Capture your first competitor to unlock benchmarking." />
-        )}
-        {!loading && competitors.length > 0 && (
-          <div className="card-list">
-            {competitors.map((competitor) => (
+      <Card title="Competitor roster" eyebrow={`${list.data?.pagination.total_items ?? 0} tracked`}>
+        {list.isLoading ? (
+          <Loader label="Loading competitors..." />
+        ) : list.data?.items.length ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            {list.data.items.map((competitor) => (
               <article
                 key={competitor.competitor_id}
-                className="surface"
-                style={{
-                  border: selectedId === competitor.competitor_id ? '2px solid rgba(59, 130, 246, 0.5)' : '1px solid rgba(148, 163, 184, 0.2)',
-                  boxShadow: 'none'
-                }}
+                className={`flex flex-col gap-3 rounded-3xl border border-white/10 bg-white/[0.05] p-4 ${
+                  competitor.competitor_id === selectedId ? 'ring-2 ring-emerald' : ''
+                }`}
               >
-                <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem' }}>
+                <div className="flex items-start justify-between gap-2">
                   <div>
-                    <h4 style={{ margin: 0 }}>{competitor.name}</h4>
+                    <h3 className="text-sm font-semibold text-white">{competitor.name}</h3>
+                    <p className="text-xs text-white/60">
+                      Updated {new Date(competitor.updated_at).toLocaleDateString()}
+                    </p>
                     {competitor.url && (
-                      <a href={competitor.url} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: '#2563eb' }}>
+                      <a
+                        className="text-xs text-emerald underline"
+                        href={competitor.url}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
                         {competitor.url}
                       </a>
                     )}
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button
-                      type="button"
-                      className="secondary"
-                      style={{ backgroundColor: '#e0f2fe', color: '#0369a1' }}
-                      onClick={() => {
-                        setSelectedId(competitor.competitor_id);
-                        void handleCompare(competitor.competitor_id);
-                      }}
-                    >
-                      Compare
-                    </button>
-                    <button
-                      type="button"
-                      className="secondary"
-                      style={{ backgroundColor: '#fee2e2', color: '#b91c1c' }}
-                      onClick={() => handleDelete(competitor.competitor_id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </header>
+                  <button
+                    type="button"
+                    className="btn-ghost rounded-full px-3 py-1 text-xs text-white/60 hover:text-white"
+                    onClick={() => setPendingDelete(competitor)}
+                  >
+                    Remove
+                  </button>
+                </div>
                 {competitor.description && (
-                  <p style={{ margin: '0.75rem 0 0', color: '#475569', fontSize: '0.9rem' }}>{competitor.description}</p>
+                  <p className="text-sm text-white/70">{competitor.description}</p>
                 )}
-                {competitor.tags?.length ? (
-                  <div style={{ marginTop: '0.65rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                {competitor.tags && competitor.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
                     {competitor.tags.map((tag) => (
-                      <span key={tag} className="pill" style={{ backgroundColor: 'rgba(59, 130, 246, 0.15)' }}>
-                        {tag}
+                      <span key={tag} className="tag bg-amethyst/20 text-amethyst">
+                        #{tag}
                       </span>
                     ))}
                   </div>
-                ) : null}
+                )}
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="btn-secondary rounded-full px-4 py-2 text-xs"
+                    onClick={() => handleCompare(competitor.competitor_id)}
+                  >
+                    Benchmark
+                  </button>
+                </div>
               </article>
             ))}
           </div>
+        ) : (
+          <EmptyState
+            title="No competitors tracked"
+            description="Add competing products to unlock comparative sentiment and topic deltas."
+            action={
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => document.querySelector<HTMLInputElement>('input[name="name"]')?.focus()}
+              >
+                Start tracking
+              </button>
+            }
+            icon={<Users className="h-10 w-10 text-amethyst" />}
+          />
         )}
-      </div>
+      </Card>
 
-      {selectedCompetitor && (
-        <div className="surface">
-          <h3 className="section-title">Selected competitor</h3>
-          <div style={{ display: 'grid', gap: '0.75rem' }}>
-            <div>
-              <strong>{selectedCompetitor.name}</strong>
-              <p style={{ margin: '0.4rem 0 0', color: '#475569', fontSize: '0.9rem' }}>
-                Last updated {new Date(selectedCompetitor.updated_at).toLocaleString()}
-              </p>
-            </div>
-            <button type="button" onClick={handleUpdate} disabled={saving}>
-              {saving ? 'Syncing...' : 'Sync metadata'}
-            </button>
-          </div>
-        </div>
-      )}
+      {comparisonLoading && <Loader label="Building comparison..." />}
 
       {comparison && (
-        <div className="surface">
-          <h3 className="section-title">You vs {comparison.competitor.name}</h3>
-          <div className="grid two">
+        <Card title={`You vs. ${comparison.competitor.name}`} eyebrow="Sentiment delta">
+          <div className="grid gap-4 md:grid-cols-2">
             <SentimentCard title="Your sentiment" summary={comparison.self_sentiment} />
-            <SentimentCard title={`${comparison.competitor.name}`} summary={comparison.competitor_sentiment} />
+            <SentimentCard title={comparison.competitor.name} summary={comparison.competitor_sentiment} />
           </div>
-          <div style={{ marginTop: '1.5rem' }}>
-            <h4 style={{ marginBottom: '0.5rem' }}>Topic deltas</h4>
+          <div className="mt-6 space-y-3">
+            <h3 className="text-sm font-semibold text-white">Topic deltas</h3>
             {comparison.top_topics.length ? (
-              <table className="table-list">
-                <thead>
+              <table className="w-full text-left text-sm text-white/70">
+                <thead className="text-xs uppercase text-white/40">
                   <tr>
-                    <th>Topic</th>
-                    <th>You</th>
-                    <th>{comparison.competitor.name}</th>
-                    <th>Delta</th>
+                    <th className="pb-2">Topic</th>
+                    <th className="pb-2">You</th>
+                    <th className="pb-2">{comparison.competitor.name}</th>
+                    <th className="pb-2">Delta</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-white/10">
                   {comparison.top_topics.map((topic) => (
                     <tr key={topic.topic_label}>
-                      <td>{topic.topic_label}</td>
-                      <td>{formatShare(topic.self_share)}</td>
-                      <td>{formatShare(topic.competitor_share)}</td>
-                      <td style={{ color: topic.delta > 0 ? '#16a34a' : topic.delta < 0 ? '#dc2626' : '#475569' }}>
+                      <td className="py-2 text-white">{topic.topic_label}</td>
+                      <td className="py-2">{formatPercent(topic.self_share)}</td>
+                      <td className="py-2">{formatPercent(topic.competitor_share)}</td>
+                      <td className={`py-2 font-medium ${topic.delta > 0 ? 'text-emerald' : topic.delta < 0 ? 'text-ruby' : 'text-white/60'}`}>
                         {topic.delta.toFixed(2)}
                       </td>
                     </tr>
@@ -288,37 +233,57 @@ export default function CompetitorsPage() {
               <EmptyState title="No overlapping topics yet" description="Ingest competitor reviews to unlock comparisons." />
             )}
           </div>
-        </div>
+        </Card>
       )}
+
+      <ConfirmModal
+        open={Boolean(pendingDelete)}
+        title="Remove competitor?"
+        description="Historic digests and insights stay intact. This just removes the record from your active list."
+        confirmLabel="Remove competitor"
+        icon={<Award className="h-5 w-5" />}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (pendingDelete) {
+            remove.mutate(pendingDelete.competitor_id);
+            if (selectedId === pendingDelete.competitor_id) {
+              setSelectedId(null);
+            }
+            setPendingDelete(null);
+          }
+        }}
+      />
     </div>
   );
 }
 
 function SentimentCard({ title, summary }: { title: string; summary: SentimentSummary }) {
   return (
-    <div className="surface" style={{ boxShadow: 'none', border: '1px solid rgba(148, 163, 184, 0.2)' }}>
-      <h4 style={{ margin: 0 }}>{title}</h4>
-      <div className="stats-row" style={{ marginTop: '0.75rem' }}>
-        <Stat label="Positive" value={summary.positive} accent="#22c55e" />
-        <Stat label="Neutral" value={summary.neutral} accent="#94a3b8" />
-        <Stat label="Negative" value={summary.negative} accent="#ef4444" />
+    <div className="rounded-3xl border border-white/10 bg-white/[0.08] p-4">
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-semibold text-white">{title}</h4>
+        <span className={`tag ${sentimentBadgeBg(summary.average_score > 0 ? 'Positive' : summary.average_score < 0 ? 'Negative' : 'Neutral')}`}>
+          {summary.average_score.toFixed(2)}
+        </span>
       </div>
-      <p style={{ margin: '0.75rem 0 0', fontSize: '0.9rem', color: '#475569' }}>
-        Average score: <strong>{summary.average_score.toFixed(2)}</strong> from <strong>{summary.review_count}</strong> reviews
+      <div className="mt-4 grid grid-cols-3 gap-3 text-center text-sm text-white/70">
+        <div>
+          <p className="text-xs uppercase tracking-wide text-white/40">Positive</p>
+          <p className="text-lg font-semibold text-emerald">{formatNumber(summary.positive)}</p>
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-wide text-white/40">Neutral</p>
+          <p className="text-lg font-semibold text-white/70">{formatNumber(summary.neutral)}</p>
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-wide text-white/40">Negative</p>
+          <p className="text-lg font-semibold text-ruby">{formatNumber(summary.negative)}</p>
+        </div>
+      </div>
+      <p className="mt-3 text-xs text-white/50">
+        Based on {formatNumber(summary.review_count)} reviews
       </p>
     </div>
   );
 }
 
-function Stat({ label, value, accent }: { label: string; value: number; accent: string }) {
-  return (
-    <div className="stat-card" style={{ backgroundColor: `${accent}20`, color: '#0f172a' }}>
-      <h3 style={{ color: '#0f172a' }}>{label}</h3>
-      <p>{value}</p>
-    </div>
-  );
-}
-
-function formatShare(value: number) {
-  return `${(value * 100).toFixed(1)}%`;
-}

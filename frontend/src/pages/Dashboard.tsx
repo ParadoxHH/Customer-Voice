@@ -1,203 +1,256 @@
-import { useEffect, useMemo, useState } from 'react';
-import type { InsightsResponse, SourceBreakdownItem } from '#types';
-import { listInsights } from '../lib/api';
-import Loading from '../components/Loading';
-import ErrorBanner from '../components/ErrorBanner';
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { CalendarRange, CloudDownload } from 'lucide-react';
+import type { InsightsResponse, ReviewIngestRequest, SourceBreakdownItem } from '#types';
+import { useInsights, useImportSampleData } from '../lib/useApi';
+import { formatNumber, sentimentBadgeBg } from '../lib/format';
+import Card from '../components/Card';
+import Stat from '../components/Stat';
 import ChartLine from '../components/ChartLine';
 import Heatmap from '../components/Heatmap';
+import Loader from '../components/Loader';
+import ErrorBanner from '../components/ErrorBanner';
 import EmptyState from '../components/EmptyState';
 
-interface FiltersState {
-  start_date?: string;
-  end_date?: string;
-  sentiment?: string;
+const RANGE_OPTIONS = [
+  { label: '7d', days: 7 },
+  { label: '30d', days: 30 },
+  { label: '90d', days: 90 }
+] as const;
+
+const SENTIMENT_OPTIONS = ['All', 'Positive', 'Neutral', 'Negative'] as const;
+
+async function loadSamplePayload(): Promise<ReviewIngestRequest> {
+  const response = await fetch('/SAMPLE_DATA.json');
+  if (!response.ok) throw new Error('Sample data file missing');
+  const sample = await response.json();
+  const firstSource = sample.sources?.[0];
+  return {
+    source_id: firstSource?.id ?? crypto.randomUUID(),
+    overwrite_source_metadata: true,
+    source_metadata: firstSource,
+    reviews: sample.reviews ?? []
+  };
 }
 
-const sentimentOptions = ['All', 'Positive', 'Neutral', 'Negative'] as const;
-
 export default function DashboardPage() {
-  const [filters, setFilters] = useState<FiltersState>({});
-  const [data, setData] = useState<InsightsResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const [range, setRange] = useState<(typeof RANGE_OPTIONS)[number]>(RANGE_OPTIONS[0]);
+  const [sentimentFilter, setSentimentFilter] = useState<(typeof SENTIMENT_OPTIONS)[number]>('All');
 
-  const loadInsights = async (nextFilters = filters) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await listInsights({
-        page: 1,
-        page_size: 25,
-        start_date: nextFilters.start_date,
-        end_date: nextFilters.end_date,
-        sentiment: nextFilters.sentiment && nextFilters.sentiment !== 'All' ? nextFilters.sentiment : undefined
-      });
-      setData(response);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to load insights';
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const dateFilters = useMemo(() => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - range.days);
+    return {
+      start_date: start.toISOString().slice(0, 10),
+      end_date: end.toISOString().slice(0, 10)
+    };
+  }, [range]);
 
-  useEffect(() => {
-    void loadInsights();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const { data, isLoading, error, refetch } = useInsights({
+    page: 1,
+    page_size: 25,
+    start_date: dateFilters.start_date,
+    end_date: dateFilters.end_date,
+    sentiment: sentimentFilter === 'All' ? undefined : sentimentFilter
+  });
+
+  const importSampleMutation = useImportSampleData();
 
   const summary = useMemo(() => {
-    if (!data) {
-      return null;
-    }
-    const total = data.pagination.total_items;
-    const lastPoint =
-      data.sentiment_trend.length > 0
-        ? data.sentiment_trend[data.sentiment_trend.length - 1]
-        : undefined;
-    const averageScore = lastPoint?.average_score ?? 0;
-    const topSource = data.source_breakdown[0];
-    return {
-      totalReviews: total,
-      averageScore,
-      topSource
-    };
+    const insights: InsightsResponse | undefined = data ?? undefined;
+    if (!insights) return null;
+    const total = insights.pagination.total_items;
+    const lastPoint = insights.sentiment_trend[insights.sentiment_trend.length - 1];
+    const avgScore = lastPoint?.average_score ?? 0;
+    const happiestSource = [...insights.source_breakdown].sort(
+      (a, b) => b.average_sentiment_score - a.average_sentiment_score
+    )[0];
+    return { totalReviews: total, avgScore, happiestSource };
   }, [data]);
 
-  const handleFilterChange = (evt: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = evt.target;
-    const next = {
-      ...filters,
-      [name]: value || undefined
-    };
-    if (name === 'sentiment' && value === 'All') {
-      delete next.sentiment;
-    }
-    setFilters(next);
-  };
+  const hasData =
+    data &&
+    (data.sentiment_trend.length > 0 ||
+      data.topic_distribution.length > 0 ||
+      data.source_breakdown.length > 0);
 
-  const handleApplyFilters = (evt: React.FormEvent) => {
-    evt.preventDefault();
-    void loadInsights(filters);
+  const handleImportSample = async () => {
+    const payload = await loadSamplePayload();
+    await importSampleMutation.mutateAsync(payload);
+    await refetch();
   };
 
   return (
-    <div className="stack">
-      <header style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        <h2 style={{ margin: 0 }}>Insights Overview</h2>
-        <p style={{ margin: 0, color: '#475569' }}>
-          Track sentiment shifts, hot topics, and source performance across your review footprint.
-        </p>
+    <div className="space-y-6">
+      <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.35em] text-white/45">Overview</p>
+          <h1 className="text-3xl font-semibold text-gradient">Customer Voice Dashboard</h1>
+          <p className="mt-2 max-w-xl text-sm text-white/65">
+            Track sentiment shifts, highlight rising topics, and coordinate faster responses across every review channel.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {RANGE_OPTIONS.map((option) => (
+            <button
+              key={option.label}
+              type="button"
+              onClick={() => setRange(option)}
+              className={`btn ${option.label === range.label ? 'btn-primary' : 'btn-secondary'}`}
+            >
+              <CalendarRange className="h-4 w-4" />
+              {option.label}
+            </button>
+          ))}
+        </div>
       </header>
 
-      <form className="surface" onSubmit={handleApplyFilters}>
-        <div className="grid two">
-          <label style={{ display: 'grid', gap: '0.4rem', fontSize: '0.85rem', color: '#475569' }}>
-            Start date
-            <input type="date" name="start_date" value={filters.start_date ?? ''} onChange={handleFilterChange} />
-          </label>
-          <label style={{ display: 'grid', gap: '0.4rem', fontSize: '0.85rem', color: '#475569' }}>
-            End date
-            <input type="date" name="end_date" value={filters.end_date ?? ''} onChange={handleFilterChange} />
-          </label>
-          <label style={{ display: 'grid', gap: '0.4rem', fontSize: '0.85rem', color: '#475569' }}>
-            Sentiment
-            <select name="sentiment" value={filters.sentiment ?? 'All'} onChange={handleFilterChange}>
-              {sentimentOptions.map((option) => (
-                <option key={option} value={option === 'All' ? 'All' : option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-          <button
-            type="button"
-            className="secondary"
-            onClick={() => {
-              setFilters({});
-              void loadInsights({});
-            }}
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="flex items-center gap-2 text-xs text-white/60">
+          Sentiment
+          <select
+            className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-white focus-visible:ring-emerald"
+            value={sentimentFilter}
+            onChange={(event) => setSentimentFilter(event.target.value as (typeof SENTIMENT_OPTIONS)[number])}
           >
-            Reset
-          </button>
-          <button type="submit" disabled={loading}>
-            Apply filters
-          </button>
-        </div>
-      </form>
+            {SENTIMENT_OPTIONS.map((option) => (
+              <option key={option} value={option} className="bg-obsidian text-white">
+                {option}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          data-testid="import-sample"
+          onClick={() => {
+            handleImportSample().catch((err) => console.error(err));
+          }}
+          className="btn-secondary rounded-full border-white/30 bg-white/10"
+          disabled={importSampleMutation.isPending}
+        >
+          <CloudDownload className="h-4 w-4" />
+          {importSampleMutation.isPending ? 'Importing...' : 'Import Sample Data'}
+        </button>
+        <button
+          type="button"
+          className="btn-ghost text-sm text-white/70 hover:text-white"
+          onClick={() => navigate('/sources')}
+        >
+          Manage Sources
+        </button>
+      </div>
 
-      {loading && <Loading label="Loading insights..." />}
-      {error && <ErrorBanner message={error} onRetry={() => loadInsights(filters)} />}
+      {error && <ErrorBanner message={error.message} onRetry={() => refetch()} />}
 
-      {data && !loading && !error && (
-        <section className="grid">
-          <div className="surface">
-            <h3 className="section-title">Sentiment trend</h3>
-            <ChartLine data={data.sentiment_trend} />
-          </div>
+      {isLoading && <Loader label="Loading insights..." />}
 
-          <div className="surface">
-            <h3 className="section-title">Topic heatmap</h3>
-            <Heatmap data={data.topic_distribution} />
-          </div>
-
-          <div className="surface">
-            <h3 className="section-title">Source breakdown</h3>
-            {data.source_breakdown.length ? (
-              <div className="grid two">
-                {data.source_breakdown.map((source) => (
-                  <SourceCard key={source.source_id} source={source} />
-                ))}
-              </div>
-            ) : (
-              <EmptyState title="No sources yet" description="Head to Sources to connect your first data feed." />
-            )}
-          </div>
-
-          <div className="surface">
-            <h3 className="section-title">Most recent reviews</h3>
-            {data.recent_reviews.length ? (
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: '1rem' }}>
-                {data.recent_reviews.slice(0, 6).map((review) => (
-                  <li key={review.review_id} style={{ borderBottom: '1px solid rgba(148, 163, 184, 0.2)', paddingBottom: '0.75rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem' }}>
-                      <div>
-                        <strong>{review.title || 'Untitled review'}</strong>
-                        <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                          {new Date(review.published_at).toLocaleString()} | {review.sentiment.label}
-                        </div>
-                      </div>
-                      <span className="pill" style={{ backgroundColor: sentimentColor(review.sentiment.label), color: '#0f172a' }}>
-                        {review.sentiment.label}
-                      </span>
-                    </div>
-                    {review.body && (
-                      <p style={{ margin: '0.5rem 0 0', color: '#475569', fontSize: '0.95rem' }}>
-                        {review.body.length > 220 ? `${review.body.slice(0, 220)}...` : review.body}
-                      </p>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <EmptyState title="No reviews found" description="Adjust filters or ingest sample data to populate this list." />
-            )}
-          </div>
-        </section>
+      {!isLoading && !error && !hasData && (
+        <Card>
+          <EmptyState
+            title="We need fresh voices"
+            description="Import sample data to explore the dashboard or connect a live data source to start listening."
+            action={
+              <>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => {
+                    handleImportSample().catch((err) => console.error(err));
+                  }}
+                >
+                  Import Sample Data
+                </button>
+                <button type="button" className="btn-secondary" onClick={() => navigate('/sources')}>
+                  Connect Sources
+                </button>
+              </>
+            }
+            icon={<CloudDownload className="h-10 w-10 text-emerald" />}
+          />
+        </Card>
       )}
 
-      {!loading && !error && !data && (
-        <EmptyState
-          title="We need data to show insights"
-          description="Try ingesting sample data from the Sources page."
-          action={
-            <a href="/sources">
-              <button type="button">Go to Sources</button>
-            </a>
-          }
-        />
+      {!isLoading && !error && hasData && data && (
+        <>
+          {summary && (
+            <div className="grid gap-4 md:grid-cols-3">
+              <Stat
+                label="Total reviews"
+                value={formatNumber(summary.totalReviews)}
+                trend={`Covering the last ${range.days} days`}
+              />
+              <Stat
+                label="Sentiment score"
+                value={summary.avgScore.toFixed(2)}
+                trend="Weighted average across sources"
+              />
+              <Stat
+                label="Happiest source"
+                value={summary.happiestSource?.source_name ?? 'n/a'}
+                trend={
+                  summary.happiestSource
+                    ? `Avg ${summary.happiestSource.average_sentiment_score.toFixed(2)}`
+                    : 'Connect additional sources'
+                }
+              />
+            </div>
+          )}
+
+          <Card title="Sentiment trajectory" eyebrow={`Last ${range.days} days`} id="sentiment-line">
+            <div data-testid="sentiment-line" className="h-[280px]">
+              <ChartLine data={data.sentiment_trend} />
+            </div>
+          </Card>
+
+          <Card title="Topic heatmap" eyebrow="Top conversations" id="topic-heatmap">
+            <div data-testid="topic-heatmap" className="h-[320px]">
+              <Heatmap data={data.topic_distribution} />
+            </div>
+          </Card>
+
+          <Card title="Source performance" eyebrow="Channels" className="space-y-4">
+            <div className="card-grid">
+              {data.source_breakdown.map((source) => (
+                <SourceCard key={source.source_id} source={source} />
+              ))}
+            </div>
+          </Card>
+
+          <Card title="Latest reviews" eyebrow="Real voices" className="space-y-4">
+            <ul className="space-y-4">
+          {data.recent_reviews.slice(0, 6).map((review) => (
+                <li key={review.review_id} className="rounded-3xl border border-white/10 bg-white/[0.05] p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-base font-semibold text-white">{review.title || 'Untitled review'}</h3>
+                      <p className="text-xs uppercase tracking-wide text-white/50">
+                        {new Date(review.published_at).toLocaleString()}
+                      </p>
+                    </div>
+                    <span className={`tag ${sentimentBadgeBg(review.sentiment.label)}`}>{review.sentiment.label}</span>
+                  </div>
+                  {review.body && (
+                    <p className="mt-3 text-sm text-white/70">
+                      {review.body.length > 240 ? `${review.body.slice(0, 240)}...` : review.body}
+                    </p>
+                  )}
+                  {review.topics && review.topics.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {review.topics.map((topic) => (
+                        <span key={topic.topic_label} className="tag bg-amethyst/15 text-amethyst">
+                          #{topic.topic_label}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </>
       )}
     </div>
   );
@@ -205,25 +258,16 @@ export default function DashboardPage() {
 
 function SourceCard({ source }: { source: SourceBreakdownItem }) {
   return (
-    <div className="surface" style={{ boxShadow: 'none', border: '1px solid rgba(148, 163, 184, 0.2)' }}>
-      <h4 style={{ margin: 0 }}>{source.source_name || 'Unnamed source'}</h4>
-      <p style={{ margin: '0.4rem 0 0', fontSize: '0.85rem', color: '#475569' }}>
-        Reviews: <strong>{source.review_count}</strong>
-      </p>
-      <p style={{ margin: '0.1rem 0 0', fontSize: '0.85rem', color: '#475569' }}>
-        Avg. sentiment score: <strong>{source.average_sentiment_score.toFixed(2)}</strong>
+    <div className="flex flex-col gap-2 rounded-3xl border border-white/10 bg-white/[0.08] p-5">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-white">{source.source_name || 'Unnamed source'}</h3>
+        <span className="tag bg-emerald/20 text-emerald">{source.review_count} reviews</span>
+      </div>
+      <p className="text-xs text-white/60">Average sentiment</p>
+      <p className="text-xl font-semibold text-white">
+        {source.average_sentiment_score.toFixed(2)}
       </p>
     </div>
   );
 }
 
-function sentimentColor(label: string) {
-  switch (label) {
-    case 'Positive':
-      return 'rgba(34, 197, 94, 0.25)';
-    case 'Negative':
-      return 'rgba(239, 68, 68, 0.25)';
-    default:
-      return 'rgba(148, 163, 184, 0.25)';
-  }
-}

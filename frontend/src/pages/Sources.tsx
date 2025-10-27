@@ -1,263 +1,313 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { PlusCircle, DatabaseZap, Trash2 } from 'lucide-react';
 import type { ReviewIngestRequest, SourceMetadata } from '#types';
-import { postIngest } from '../lib/api';
-import Loading from '../components/Loading';
-import ErrorBanner from '../components/ErrorBanner';
+import { useImportSampleData } from '../lib/useApi';
+import Card from '../components/Card';
 import EmptyState from '../components/EmptyState';
+import ErrorBanner from '../components/ErrorBanner';
+import Loader from '../components/Loader';
+import ConfirmModal from '../components/ConfirmModal';
 
-interface ConnectedSource extends SourceMetadata {
+interface ConnectedSource {
   id: string;
+  name: string;
+  platform?: string;
+  external_id?: string;
+  url?: string;
+  created_at: string;
 }
 
-interface SampleSource extends ConnectedSource {
-  created_at?: string;
+interface SampleResponse {
+  sources: (SourceMetadata & { id: string })[];
+  reviews: Array<ReviewIngestRequest['reviews'][number] & { source_id: string }>;
 }
 
-interface SampleReview {
-  source_id: string;
-  source_review_id: string;
-  title?: string;
-  body: string;
-  rating?: number;
-  author_name?: string;
-  language?: string;
-  location?: string;
-  published_at: string;
-}
+const STORAGE_KEY = 'cv_sources';
 
-const createInitialFormState = () => ({
-  id:
-    typeof crypto !== 'undefined' && 'randomUUID' in crypto
-      ? crypto.randomUUID()
-      : `source-${Math.random().toString(36).slice(2)}`,
+const newSource = (): ConnectedSource => ({
+  id: crypto.randomUUID(),
   name: '',
   platform: '',
   external_id: '',
-  url: ''
+  url: '',
+  created_at: new Date().toISOString()
 });
 
+async function buildIngestPayload(sample: SampleResponse): Promise<ReviewIngestRequest[]> {
+  const grouped = new Map<string, ReviewIngestRequest>();
+
+  for (const review of sample.reviews ?? []) {
+    const existing = grouped.get(review.source_id);
+    const sourceMeta = sample.sources.find((source) => source.id === review.source_id);
+    if (!existing) {
+      grouped.set(review.source_id, {
+        source_id: review.source_id,
+        overwrite_source_metadata: true,
+        source_metadata: sourceMeta,
+        reviews: []
+      });
+    }
+    grouped.get(review.source_id)?.reviews.push({
+      source_review_id: review.source_review_id,
+      title: review.title,
+      body: review.body,
+      rating: review.rating,
+      author_name: review.author_name,
+      language: review.language,
+      location: review.location,
+      published_at: review.published_at,
+      metadata: review.metadata ?? {}
+    });
+  }
+
+  return Array.from(grouped.values());
+}
+
+async function loadSample(): Promise<SampleResponse> {
+  const response = await fetch('/SAMPLE_DATA.json');
+  if (!response.ok) {
+    throw new Error('Unable to load SAMPLE_DATA.json. Ensure it is deployed with the app.');
+  }
+  return response.json();
+}
+
 export default function SourcesPage() {
-  const [connectedSources, setConnectedSources] = useState<ConnectedSource[]>([]);
-  const [form, setForm] = useState(createInitialFormState);
+  const [sources, setSources] = useState<ConnectedSource[]>([]);
+  const [form, setForm] = useState<ConnectedSource>(newSource);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [importing, setImporting] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<ConnectedSource | null>(null);
+  const importSampleMutation = useImportSampleData();
 
-  const handleChange = (evt: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = evt.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSaveSource = (evt: React.FormEvent) => {
-    evt.preventDefault();
-    setError(null);
-    setMessage(null);
-
-    if (!form.name.trim()) {
-      setError('Please provide a name for the source.');
-      return;
+  useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      setSources(JSON.parse(stored));
     }
+  }, []);
 
-    const nextSource: ConnectedSource = {
-      id: form.id,
-      name: form.name,
-      platform: form.platform || undefined,
-      external_id: form.external_id || undefined,
-      url: form.url || undefined
-    };
-    setConnectedSources((prev) => [...prev, nextSource]);
-    setMessage(`Source "${form.name}" saved locally. Use the ingest endpoint to add reviews.`);
-    setForm(createInitialFormState());
-  };
-
-  const handleImportSample = async () => {
-    setImporting(true);
-    setError(null);
-    setMessage(null);
-    try {
-      const response = await fetch('/SAMPLE_DATA.json');
-      if (!response.ok) {
-        throw new Error('Could not fetch SAMPLE_DATA.json. Ensure it is deployed alongside the SPA.');
-      }
-      const sample = await response.json();
-
-      const sources: SampleSource[] = sample.sources ?? [];
-      const reviews: SampleReview[] = sample.reviews ?? [];
-
-      const grouped = reviews.reduce<Record<string, ReviewIngestRequest>>((acc, review) => {
-        if (!acc[review.source_id]) {
-          const meta = sources.find((source) => source.id === review.source_id);
-          acc[review.source_id] = {
-            source_id: review.source_id,
-            overwrite_source_metadata: true,
-            source_metadata: meta
-              ? {
-                  name: meta.name,
-                  platform: meta.platform,
-                  external_id: meta.external_id,
-                  url: meta.url
-                }
-              : undefined,
-            reviews: []
-          };
-        }
-        acc[review.source_id].reviews.push({
-          source_review_id: review.source_review_id,
-          title: review.title,
-          body: review.body,
-          rating: Number(review.rating ?? 0),
-          author_name: review.author_name,
-          language: review.language,
-          location: review.location,
-          published_at: review.published_at,
-          metadata: {}
-        });
-        return acc;
-      }, {});
-
-      for (const request of Object.values(grouped)) {
-        await postIngest(request);
-      }
-
-      setConnectedSources((prev) => {
-        const merged = [...prev];
-        sources.forEach((source) => {
-          if (!merged.some((item) => item.id === source.id)) {
-            merged.push({
-              id: source.id,
-              name: source.name,
-              platform: source.platform,
-              external_id: source.external_id,
-              url: source.url
-            });
-          }
-        });
-        return merged;
-      });
-      setMessage('Sample data ingested. Refresh the dashboard to see the updates.');
-    } catch (err) {
-      const msg =
-        err instanceof Error
-          ? err.message
-          : 'Failed to import sample data. Check network logs for details.';
-      setError(msg);
-    } finally {
-      setImporting(false);
-    }
-  };
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sources));
+  }, [sources]);
 
   const platformSummary = useMemo(() => {
-    const counts = connectedSources.reduce<Record<string, number>>((acc, source) => {
+    const counts = sources.reduce<Record<string, number>>((acc, source) => {
       const key = source.platform || 'unknown';
       acc[key] = (acc[key] ?? 0) + 1;
       return acc;
     }, {});
     return Object.entries(counts).map(([platform, count]) => ({ platform, count }));
-  }, [connectedSources]);
+  }, [sources]);
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+    setMessage(null);
+
+    if (!form.name.trim()) {
+      setError('Give this source a friendly name so teammates can recognise it.');
+      return;
+    }
+
+    setSources((prev) => [...prev, form]);
+    setForm(newSource());
+    setMessage(`Saved    ${form.name}   . Remember to ingest reviews to populate the dashboard.`);
+  };
+
+  const handleImportSample = async () => {
+    try {
+      setError(null);
+      setMessage(null);
+      const sample = await loadSample();
+      const payloads = await buildIngestPayload(sample);
+      await Promise.all(payloads.map((payload) => importSampleMutation.mutateAsync(payload)));
+      setSources((prev) => {
+        const merged = [...prev];
+        sample.sources.forEach((source) => {
+          if (!merged.some((item) => item.id === source.id)) {
+            merged.push({
+              id: source.id,
+              name: source.name ?? 'Imported Source',
+              platform: source.platform,
+              external_id: source.external_id,
+              url: source.url,
+              created_at: new Date().toISOString()
+            });
+          }
+        });
+        return merged;
+      });
+      setMessage('Sample data ingested. Visit the dashboard to explore the insights.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to import sample data.');
+    }
+  };
+
+  const handleDelete = () => {
+    if (!pendingDelete) return;
+    setSources((prev) => prev.filter((source) => source.id !== pendingDelete.id));
+    setPendingDelete(null);
+  };
 
   return (
-    <div className="stack">
-      <header>
-        <h2 style={{ margin: 0 }}>Sources</h2>
-        <p style={{ margin: '0.35rem 0 0', color: '#475569' }}>
-          Capture the metadata for each intake channel. These records stay local until reviews are ingested.
+    <div className="space-y-6">
+      <header className="flex flex-col gap-2">
+        <h1 className="text-3xl font-semibold text-gradient">Sources</h1>
+        <p className="max-w-xl text-sm text-white/65">
+          Capture the metadata for each intake channel. These records stay local until you ingest reviews or connect live automations.
         </p>
       </header>
 
       {error && <ErrorBanner message={error} />}
       {message && (
-        <div
-          style={{
-            padding: '0.8rem 1rem',
-            borderRadius: '0.75rem',
-            backgroundColor: 'rgba(56, 189, 248, 0.12)',
-            border: '1px solid rgba(56, 189, 248, 0.3)',
-            color: '#0369a1'
-          }}
-        >
+        <div className="rounded-3xl border border-emerald/30 bg-emerald/10 px-4 py-3 text-sm text-emerald">
           {message}
         </div>
       )}
 
-      <form className="surface" onSubmit={handleSaveSource}>
-        <h3 className="section-title">Connect a source</h3>
-        <label style={{ display: 'grid', gap: '0.4rem', fontSize: '0.85rem', color: '#475569' }}>
-          Source name
-          <input name="name" placeholder="App Store Reviews" value={form.name} onChange={handleChange} required />
-        </label>
-        <label style={{ display: 'grid', gap: '0.4rem', fontSize: '0.85rem', color: '#475569' }}>
-          Platform
-          <input name="platform" placeholder="app_store / survey / support" value={form.platform} onChange={handleChange} />
-        </label>
-        <label style={{ display: 'grid', gap: '0.4rem', fontSize: '0.85rem', color: '#475569' }}>
-          External ID
-          <input name="external_id" placeholder="com.customer.voice.ios" value={form.external_id} onChange={handleChange} />
-        </label>
-        <label style={{ display: 'grid', gap: '0.4rem', fontSize: '0.85rem', color: '#475569' }}>
-          Source URL
-          <input name="url" placeholder="https://..." value={form.url} onChange={handleChange} />
-        </label>
-        <button type="submit">Save metadata</button>
-      </form>
+      <Card title="Connect a source" eyebrow="Metadata">
+        <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
+          <label className="flex flex-col gap-2 text-xs uppercase tracking-wide text-white/60">
+            Name
+            <input
+              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white focus-visible:ring-emerald"
+              name="name"
+              placeholder="Google Play Reviews"
+              value={form.name ?? ''}
+              onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+              required
+            />
+          </label>
+          <label className="flex flex-col gap-2 text-xs uppercase tracking-wide text-white/60">
+            Platform
+            <input
+              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white focus-visible:ring-emerald"
+              name="platform"
+              placeholder="play_store / yelp / surveys"
+              value={form.platform ?? ''}
+              onChange={(event) => setForm((prev) => ({ ...prev, platform: event.target.value }))}
+            />
+          </label>
+          <label className="flex flex-col gap-2 text-xs uppercase tracking-wide text-white/60 md:col-span-2">
+            External ID
+            <input
+              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white focus-visible:ring-emerald"
+              name="external_id"
+              placeholder="com.customer.voice.ios"
+              value={form.external_id ?? ''}
+              onChange={(event) => setForm((prev) => ({ ...prev, external_id: event.target.value }))}
+            />
+          </label>
+          <label className="flex flex-col gap-2 text-xs uppercase tracking-wide text-white/60 md:col-span-2">
+            Source URL
+            <input
+              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white focus-visible:ring-emerald"
+              name="url"
+              placeholder="https://..."
+              value={form.url ?? ''}
+              onChange={(event) => setForm((prev) => ({ ...prev, url: event.target.value }))}
+            />
+          </label>
+          <div className="md:col-span-2">
+            <button type="submit" className="btn-primary rounded-full px-6 py-3 text-sm">
+              <PlusCircle className="h-4 w-4" />
+              Save source
+            </button>
+          </div>
+        </form>
+      </Card>
 
-      <div className="surface">
-        <h3 className="section-title">Quick actions</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <button type="button" onClick={handleImportSample} disabled={importing}>
-            {importing ? 'Importing sample data...' : 'Import sample data'}
-          </button>
-          <p style={{ margin: 0, color: '#475569', fontSize: '0.85rem' }}>
-            Loads the provided SAMPLE_DATA.json into your Render backend using the ingest endpoint.
+      <Card title="Quick actions" eyebrow="Manual ingest">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <p className="max-w-xl text-sm text-white/65">
+            Pull in the sample dataset or sync connected sources manually. This fires the `/ingest` endpoint on the backend.
           </p>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              className="btn-primary rounded-full px-5 py-2 text-sm"
+              onClick={() => {
+                handleImportSample().catch((err) => console.error(err));
+              }}
+              disabled={importSampleMutation.isPending}
+            >
+              <DatabaseZap className="h-4 w-4" />
+              {importSampleMutation.isPending ? 'Syncing...' : 'Fetch New Reviews'}
+            </button>
+          </div>
         </div>
-      </div>
+      </Card>
 
-      <div className="surface">
-        <h3 className="section-title">Connected sources</h3>
-        {connectedSources.length ? (
-          <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: '0.75rem' }}>
-            {connectedSources.map((source) => (
-              <li key={source.id} className="surface" style={{ padding: '0.75rem', boxShadow: 'none' }}>
-                <strong>{source.name}</strong>
-                <div style={{ fontSize: '0.85rem', color: '#475569', marginTop: '0.35rem' }}>
-                  Platform: {source.platform ?? 'n/a'} | External ID: {source.external_id ?? 'n/a'}
+      <Card title="Connected sources" eyebrow="Local list">
+        {sources.length === 0 ? (
+          <EmptyState
+            title="No sources yet"
+            description="Add your first source so the team knows where reviews originate."
+          />
+        ) : (
+          <ul className="space-y-3">
+            {sources.map((source) => (
+              <li
+                key={source.id}
+                className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-white/[0.05] p-4 md:flex-row md:items-center md:justify-between"
+              >
+                <div>
+                  <h3 className="text-sm font-semibold text-white">{source.name}</h3>
+                  <p className="text-xs text-white/60">
+                    Platform: {source.platform || 'n/a'}    External ID: {source.external_id || 'n/a'}
+                  </p>
+                  {source.url && (
+                    <a
+                      className="text-xs text-emerald underline"
+                      href={source.url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {source.url}
+                    </a>
+                  )}
                 </div>
-                {source.url && (
-                  <a href={source.url} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: '#2563eb' }}>
-                    {source.url}
-                  </a>
-                )}
+                <button
+                  type="button"
+                  className="btn-ghost text-xs text-white/70 hover:text-white"
+                  onClick={() => setPendingDelete(source)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Remove
+                </button>
               </li>
             ))}
           </ul>
-        ) : (
-          <EmptyState title="No sources captured yet" description="Save your first source using the form above." />
         )}
-      </div>
+      </Card>
 
-      {connectedSources.length > 0 && (
-        <div className="surface">
-          <h3 className="section-title">Platforms summary</h3>
-          <table className="table-list">
-            <thead>
-              <tr>
-                <th>Platform</th>
-                <th>Sources</th>
-              </tr>
-            </thead>
-            <tbody>
-              {platformSummary.map((item) => (
-                <tr key={item.platform}>
-                  <td>{item.platform}</td>
-                  <td>{item.count}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {sources.length > 0 && (
+        <Card title="Platform summary" eyebrow="Mix">
+          <div className="space-y-2 text-sm text-white/70">
+            {platformSummary.map((summary) => (
+              <div key={summary.platform} className="flex items-center justify-between rounded-2xl bg-white/5 px-4 py-2">
+                <span className="text-white">{summary.platform}</span>
+                <span>{summary.count}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
       )}
 
-      {importing && <Loading label="Sending sample data to the API..." />}
+      {importSampleMutation.isPending && <Loader label="Syncing reviews..." />}
+
+      <ConfirmModal
+        open={Boolean(pendingDelete)}
+        title="Remove source?"
+        description={`This only removes the source from your local list. Reviews already ingested remain in the system.`}
+        confirmLabel="Remove source"
+        icon={<Trash2 className="h-5 w-5" />}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }
+
+
+

@@ -1,4 +1,5 @@
 import type {
+  AnalyzeRequest,
   AnalyzeResponse,
   Competitor,
   CompetitorComparisonResponse,
@@ -14,28 +15,38 @@ import type {
 } from '#types';
 
 const BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '') ?? '';
-const DIGEST_TOKEN = import.meta.env.VITE_DIGEST_TOKEN;
+const RETRY_LIMIT = 3;
+const DIGEST_TOKEN_KEY = 'cv_digest_token';
 
-type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE';
+type RequestOptions = RequestInit & { retryCount?: number };
 
-interface RequestOptions extends RequestInit {
-  retryCount?: number;
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export function getStoredDigestToken(): string | undefined {
+  if (typeof window === 'undefined') return import.meta.env.VITE_DIGEST_TOKEN;
+  return (
+    localStorage.getItem(DIGEST_TOKEN_KEY) ||
+    import.meta.env.VITE_DIGEST_TOKEN ||
+    undefined
+  );
 }
 
-const MAX_RETRIES = 2;
-
-async function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+export function persistDigestToken(token: string) {
+  if (typeof window === 'undefined') return;
+  if (!token) {
+    localStorage.removeItem(DIGEST_TOKEN_KEY);
+    return;
+  }
+  localStorage.setItem(DIGEST_TOKEN_KEY, token);
 }
 
-async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+export async function fetchJson<T>(path: string, options: RequestOptions = {}): Promise<T> {
   if (!BASE_URL) {
     throw new Error('VITE_API_URL is not configured');
   }
 
-  const url = `${BASE_URL}${path}`;
   const { retryCount = 0, headers, ...rest } = options;
-  const response = await fetch(url, {
+  const response = await fetch(`${BASE_URL}${path}`, {
     headers: {
       'Content-Type': 'application/json',
       ...headers
@@ -43,31 +54,31 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     ...rest
   });
 
-  if (response.status === 429 && retryCount < MAX_RETRIES) {
-    const retryAfterHeader = response.headers.get('Retry-After');
-    const retryAfterSeconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 2 ** retryCount;
-    await sleep((retryAfterSeconds || 1) * 1000);
-    return request<T>(path, { ...options, retryCount: retryCount + 1 });
+  if (response.status === 429 && retryCount < RETRY_LIMIT) {
+    const retryAfter = response.headers.get('Retry-After');
+    const waitSeconds = retryAfter ? parseInt(retryAfter, 10) : 2 ** retryCount;
+    await sleep(Math.max(1, waitSeconds) * 1000);
+    return fetchJson<T>(path, { ...options, retryCount: retryCount + 1 });
   }
 
-  const contentType = response.headers.get('Content-Type');
-  const isJson = contentType?.includes('application/json');
+  const isJson = response.headers.get('Content-Type')?.includes('application/json');
   const payload = isJson ? await response.json() : null;
 
   if (!response.ok) {
     const error = payload as ErrorResponse | RateLimitError | null;
     const message = error?.message ?? `Request failed with status ${response.status}`;
-    const details = 'details' in (error ?? {}) ? (error as ErrorResponse).details : undefined;
     const err = new Error(message) as Error & { status?: number; details?: unknown };
     err.status = response.status;
-    err.details = details;
+    if (error && 'details' in error) {
+      err.details = error.details;
+    }
     throw err;
   }
 
   return payload as T;
 }
 
-function toQuery(params: Record<string, string | number | boolean | undefined>) {
+const toQuery = (params: Record<string, string | number | boolean | undefined>) => {
   const search = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
     if (value === undefined || value === null || value === '') return;
@@ -75,86 +86,63 @@ function toQuery(params: Record<string, string | number | boolean | undefined>) 
   });
   const query = search.toString();
   return query ? `?${query}` : '';
-}
-
-export async function listInsights(params: {
-  page?: number;
-  page_size?: number;
-  start_date?: string;
-  end_date?: string;
-  source_id?: string;
-  sentiment?: string;
-} = {}): Promise<InsightsResponse> {
-  const query = toQuery(params);
-  return request<InsightsResponse>(`/insights${query}`, { method: 'GET' });
-}
-
-export async function postIngest(payload: ReviewIngestRequest): Promise<ReviewIngestResponse> {
-  return request<ReviewIngestResponse>('/ingest', {
-    method: 'POST',
-    body: JSON.stringify(payload)
-  });
-}
-
-export async function postAnalyze(payload: { text: string; language?: string }): Promise<AnalyzeResponse> {
-  return request<AnalyzeResponse>('/analyze', {
-    method: 'POST',
-    body: JSON.stringify(payload)
-  });
-}
-
-export async function listCompetitors(params: { page?: number; page_size?: number } = {}): Promise<CompetitorListResponse> {
-  const query = toQuery(params);
-  return request<CompetitorListResponse>(`/competitors${query}`, { method: 'GET' });
-}
-
-export async function createCompetitor(payload: CompetitorCreate): Promise<Competitor> {
-  return request<Competitor>('/competitors', {
-    method: 'POST',
-    body: JSON.stringify(payload)
-  });
-}
-
-export async function updateCompetitor(id: string, payload: Partial<CompetitorCreate>): Promise<Competitor> {
-  return request<Competitor>(`/competitors/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(payload)
-  });
-}
-
-export async function deleteCompetitor(id: string): Promise<void> {
-  await request<void>(`/competitors/${id}`, { method: 'DELETE' });
-}
-
-export async function getCompetitorComparison(
-  id: string,
-  params: { start_date?: string; end_date?: string } = {}
-): Promise<CompetitorComparisonResponse> {
-  const query = toQuery(params);
-  return request<CompetitorComparisonResponse>(`/competitors/${id}/comparison${query}`, { method: 'GET' });
-}
-
-export async function runDigest(payload: DigestRequest = {}): Promise<DigestResponse> {
-  if (!DIGEST_TOKEN) {
-    throw new Error('VITE_DIGEST_TOKEN is not set; cannot call digest endpoint.');
-  }
-  return request<DigestResponse>('/digest/run', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${DIGEST_TOKEN}`
-    },
-    body: JSON.stringify(payload)
-  });
-}
+};
 
 export const api = {
-  listInsights,
-  postIngest,
-  postAnalyze,
-  listCompetitors,
-  createCompetitor,
-  updateCompetitor,
-  deleteCompetitor,
-  getCompetitorComparison,
-  runDigest
+  importReviews: (payload: ReviewIngestRequest) =>
+    fetchJson<ReviewIngestResponse>('/ingest', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
+  analyzeText: (payload: AnalyzeRequest) =>
+    fetchJson<AnalyzeResponse>('/analyze', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
+  insights: (params: {
+    page?: number;
+    page_size?: number;
+    start_date?: string;
+    end_date?: string;
+    source_id?: string;
+    sentiment?: string;
+  } = {}) => {
+    const query = toQuery(params);
+    return fetchJson<InsightsResponse>(`/insights${query}`, { method: 'GET' });
+  },
+  listCompetitors: (params: { page?: number; page_size?: number } = {}) => {
+    const query = toQuery(params);
+    return fetchJson<CompetitorListResponse>(`/competitors${query}`, { method: 'GET' });
+  },
+  createCompetitor: (payload: CompetitorCreate) =>
+    fetchJson<Competitor>('/competitors', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
+  updateCompetitor: (id: string, payload: Partial<CompetitorCreate>) =>
+    fetchJson<Competitor>(`/competitors/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload)
+    }),
+  deleteCompetitor: (id: string) =>
+    fetchJson<void>(`/competitors/${id}`, { method: 'DELETE' }),
+  competitorComparison: (id: string, params: { start_date?: string; end_date?: string } = {}) => {
+    const query = toQuery(params);
+    return fetchJson<CompetitorComparisonResponse>(`/competitors/${id}/comparison${query}`, {
+      method: 'GET'
+    });
+  },
+  runDigest: (payload: DigestRequest = {}) => {
+    const token = getStoredDigestToken();
+    if (!token) {
+      throw new Error('No digest token configured');
+    }
+    return fetchJson<DigestResponse>('/digest/run', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+  }
 };

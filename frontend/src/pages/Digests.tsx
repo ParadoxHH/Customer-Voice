@@ -1,183 +1,253 @@
-import { useMemo, useState } from 'react';
-import type { DigestRequest, DigestResponse } from '#types';
-import { runDigest } from '../lib/api';
-import Loading from '../components/Loading';
-import ErrorBanner from '../components/ErrorBanner';
+import { useEffect, useMemo, useState } from 'react';
+import { CalendarRange, PlayCircle } from 'lucide-react';
+import type { DigestResponse } from '#types';
+import { useRunDigest } from '../lib/useApi';
+import { formatNumber } from '../lib/format';
+import Card from '../components/Card';
 import EmptyState from '../components/EmptyState';
+import ErrorBanner from '../components/ErrorBanner';
+import Loader from '../components/Loader';
 
 type Frequency = 'weekly' | 'monthly';
 
-export default function DigestsPage() {
-  const [frequency, setFrequency] = useState<Frequency>('weekly');
-  const [digest, setDigest] = useState<DigestResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+const STORAGE_KEY = 'cv_digest_frequency';
 
-  const timeframe = useMemo(() => {
-    const now = new Date();
-    const end = now.toISOString();
-    const start = new Date(now);
-    if (frequency === 'weekly') {
-      start.setDate(now.getDate() - 7);
-    } else {
-      start.setMonth(now.getMonth() - 1);
-    }
-    return { start: start.toISOString(), end };
+const buildTimeframe = (frequency: Frequency) => {
+  const end = new Date();
+  const start = new Date(end);
+  if (frequency === 'weekly') {
+    start.setDate(end.getDate() - 7);
+  } else {
+    start.setMonth(end.getMonth() - 1);
+  }
+  return {
+    timeframe_start: start.toISOString(),
+    timeframe_end: end.toISOString()
+  };
+};
+
+const splitTopics = (digest: DigestResponse) => {
+  const topics = digest.topic_spotlight ?? [];
+  const praise = [...topics]
+    .filter((topic) => topic.change_vs_previous >= 0)
+    .sort((a, b) => b.change_vs_previous - a.change_vs_previous)
+    .slice(0, 3);
+  const complaints = [...topics]
+    .filter((topic) => topic.change_vs_previous < 0)
+    .sort((a, b) => a.change_vs_previous - b.change_vs_previous)
+    .slice(0, 3);
+  return { praise, complaints };
+};
+
+export default function DigestsPage() {
+  const [frequency, setFrequency] = useState<Frequency>(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored === 'monthly' ? 'monthly' : 'weekly';
+  });
+  const [preview, setPreview] = useState<DigestResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const digestMutation = useRunDigest();
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, frequency);
   }, [frequency]);
 
+  const timeframe = useMemo(() => buildTimeframe(frequency), [frequency]);
+  const praiseAndComplaints = useMemo(() => (preview ? splitTopics(preview) : null), [preview]);
+
   const handleRun = async () => {
-    setLoading(true);
     setError(null);
     try {
-      const payload: DigestRequest = {
-        timeframe_start: timeframe.start,
-        timeframe_end: timeframe.end,
+      const payload = {
+        timeframe_start: timeframe.timeframe_start,
+        timeframe_end: timeframe.timeframe_end,
         include_competitors: true
       };
-      const response = await runDigest(payload);
-      setDigest(response);
+      const response = await digestMutation.mutateAsync(payload);
+      setPreview(response);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to run digest';
-      setError(message);
-      setDigest(null);
-    } finally {
-      setLoading(false);
+      setPreview(null);
+      setError(err instanceof Error ? err.message : 'Failed to generate digest.');
     }
   };
 
   return (
-    <div className="stack">
-      <header>
-        <h2 style={{ margin: 0 }}>Digests</h2>
-        <p style={{ margin: '0.35rem 0 0', color: '#475569' }}>
-          Generate and preview automated summaries before scheduling the Render job.
+    <div className="space-y-6">
+      <header className="flex flex-col gap-2">
+        <h1 className="text-3xl font-semibold text-gradient">Digests</h1>
+        <p className="max-w-xl text-sm text-white/65">
+          Generate, preview, and schedule automated digests so stakeholders stay aligned every Monday.
         </p>
       </header>
 
       {error && <ErrorBanner message={error} />}
 
-      <div className="surface">
-        <h3 className="section-title">Frequency</h3>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            className={frequency === 'weekly' ? '' : 'secondary'}
-            onClick={() => setFrequency('weekly')}
-          >
-            Weekly digest
-          </button>
-          <button
-            type="button"
-            className={frequency === 'monthly' ? '' : 'secondary'}
-            onClick={() => setFrequency('monthly')}
-          >
-            Monthly digest
-          </button>
+      <Card title="Digest controls" eyebrow="Timeframe">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex gap-2 rounded-full border border-white/10 bg-white/5 p-1 text-xs">
+            <button
+              type="button"
+              className={`rounded-full px-3 py-1 ${frequency === 'weekly' ? 'bg-gem-gradient text-white' : 'text-white/60'}`}
+              onClick={() => setFrequency('weekly')}
+            >
+              Weekly
+            </button>
+            <button
+              type="button"
+              className={`rounded-full px-3 py-1 ${frequency === 'monthly' ? 'bg-gem-gradient text-white' : 'text-white/60'}`}
+              onClick={() => setFrequency('monthly')}
+            >
+              Monthly
+            </button>
+          </div>
+          <span className="inline-flex items-center gap-2 text-xs text-white/50">
+            <CalendarRange className="h-4 w-4 text-emerald" />
+            {new Date(timeframe.timeframe_start).toLocaleString()} {'->'} {new Date(timeframe.timeframe_end).toLocaleString()}
+          </span>
         </div>
-        <p style={{ marginTop: '0.75rem', fontSize: '0.9rem', color: '#475569' }}>
-          Timeframe: <strong>{new Date(timeframe.start).toLocaleString()}</strong> &rarr;{' '}
-          <strong>{new Date(timeframe.end).toLocaleString()}</strong>
-        </p>
-        <button type="button" onClick={handleRun} disabled={loading}>
-          {loading ? 'Generating digest...' : 'Run now'}
+        <button
+          type="button"
+          data-testid="run-digest"
+          className="btn-primary mt-4 rounded-full px-6 py-3 text-sm"
+          onClick={handleRun}
+          disabled={digestMutation.isPending}
+        >
+          <PlayCircle className="h-4 w-4" />
+          {digestMutation.isPending ? 'Generating...' : 'Run now'}
         </button>
-      </div>
+      </Card>
 
-      {loading && <Loading label="Assembling digest..." />}
+      {digestMutation.isPending && <Loader label="Assembling digest..." />}
 
-      {digest && !loading && (
-        <div className="surface">
-          <h3 className="section-title">Digest preview</h3>
-          <div className="grid">
-            <section>
-              <h4>Highlights</h4>
-              <ul style={{ paddingLeft: '1.15rem' }}>
-                {digest.highlights.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </section>
+      {preview ? (
+        <>
+          <Card title="Highlights" eyebrow="Digest summary">
+            <ul className="space-y-2 text-sm text-white/70">
+              {preview.highlights.map((highlight) => (
+                <li key={highlight} className="flex gap-2">
+                  <span className="mt-1 block h-[6px] w-[6px] rounded-full bg-emerald" />
+                  {highlight}
+                </li>
+              ))}
+            </ul>
+          </Card>
 
-            <section>
-              <h4>Key metrics</h4>
-              <table className="table-list">
-                <tbody>
-                  {Object.entries(digest.key_metrics).map(([key, value]) => (
-                    <tr key={key}>
-                      <td style={{ textTransform: 'capitalize' }}>{key.replace(/_/g, ' ')}</td>
-                      <td>{value}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </section>
+          <Card title="Key metrics" eyebrow="Snapshot">
+            <dl className="grid gap-4 md:grid-cols-3">
+              {Object.entries(preview.key_metrics).map(([key, value]) => (
+                <div key={key} className="rounded-3xl border border-white/10 bg-white/[0.05] p-4">
+                  <dt className="text-xs uppercase tracking-wide text-white/50">{key.replace(/_/g, ' ')}</dt>
+                  <dd className="mt-2 text-xl font-semibold text-white">{String(value)}</dd>
+                </div>
+              ))}
+              {preview.sentiment_snapshot && (
+                <div className="rounded-3xl border border-white/10 bg-white/[0.05] p-4">
+                  <dt className="text-xs uppercase tracking-wide text-white/50">Sentiment mix</dt>
+                  <dd className="mt-2 text-sm text-white/70">
+                    Positive {formatNumber(preview.sentiment_snapshot.positive)} | Neutral{' '}
+                    {formatNumber(preview.sentiment_snapshot.neutral)} | Negative{' '}
+                    {formatNumber(preview.sentiment_snapshot.negative)}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          </Card>
 
-            {digest.sentiment_snapshot && (
-              <section>
-                <h4>Sentiment snapshot</h4>
-                <p style={{ margin: '0.35rem 0', color: '#475569' }}>
-                  Positive {digest.sentiment_snapshot.positive} | Neutral {digest.sentiment_snapshot.neutral} | Negative{' '}
-                  {digest.sentiment_snapshot.negative} | Avg score {digest.sentiment_snapshot.average_score}
-                </p>
-              </section>
-            )}
-
-            {digest.topic_spotlight && digest.topic_spotlight.length > 0 && (
-              <section>
-                <h4>Topic spotlight</h4>
-                <ul style={{ paddingLeft: '1.15rem' }}>
-                  {digest.topic_spotlight.map((topic) => (
-                    <li key={topic.topic_label}>
-                      <strong>{topic.topic_label}</strong> - change: {topic.change_vs_previous}
-                      {topic.sample_quotes?.length ? (
-                        <blockquote style={{ margin: '0.35rem 0 0', color: '#475569', fontSize: '0.9rem' }}>
+          <Card title="Topic spotlights" eyebrow="Top shifts" className="grid gap-6 md:grid-cols-2">
+            <div>
+              <h3 className="text-sm font-semibold text-white">Top praise</h3>
+              {praiseAndComplaints?.praise.length ? (
+                <ul className="mt-3 space-y-3 text-sm text-white/70">
+                  {praiseAndComplaints.praise.map((topic) => (
+                    <li key={topic.topic_label} className="rounded-3xl border border-white/10 bg-white/[0.05] p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-emerald">{topic.topic_label}</span>
+                        <span className="text-xs text-white/40">+{topic.change_vs_previous.toFixed(2)}</span>
+                      </div>
+                      {topic.sample_quotes?.[0] && (
+                        <blockquote className="mt-2 border-l-2 border-emerald/40 pl-3 text-xs text-white/60">
                           "{topic.sample_quotes[0]}"
                         </blockquote>
-                      ) : null}
+                      )}
                     </li>
                   ))}
                 </ul>
-              </section>
-            )}
-
-            {digest.competitor_summary && digest.competitor_summary.length > 0 && (
-              <section>
-                <h4>Competitor signals</h4>
-                <ul style={{ paddingLeft: '1.15rem' }}>
-                  {digest.competitor_summary.map((item) => (
-                    <li key={item.competitor_id}>
-                      <strong>{item.name}</strong> - delta: {item.sentiment_delta}{' '}
-                      {item.highlight && <span style={{ color: '#475569' }}>({item.highlight})</span>}
+              ) : (
+                <EmptyState title="No wins yet" description="Import more data to surface praise trends." />
+              )}
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-white">Top complaints</h3>
+              {praiseAndComplaints?.complaints.length ? (
+                <ul className="mt-3 space-y-3 text-sm text-white/70">
+                  {praiseAndComplaints.complaints.map((topic) => (
+                    <li key={topic.topic_label} className="rounded-3xl border border-white/10 bg-white/[0.03] p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-ruby">{topic.topic_label}</span>
+                        <span className="text-xs text-white/40">{topic.change_vs_previous.toFixed(2)}</span>
+                      </div>
+                      {topic.sample_quotes?.[0] && (
+                        <blockquote className="mt-2 border-l-2 border-ruby/40 pl-3 text-xs text-white/60">
+                          "{topic.sample_quotes[0]}"
+                        </blockquote>
+                      )}
                     </li>
                   ))}
                 </ul>
-              </section>
-            )}
-          </div>
+              ) : (
+                <EmptyState
+                  title="No complaints detected"
+                  description="You are trending positive. Keep the momentum!"
+                />
+              )}
+            </div>
+          </Card>
 
-          <details style={{ marginTop: '1rem' }}>
-            <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Raw JSON</summary>
-            <pre
-              style={{
-                backgroundColor: '#0f172a',
-                color: '#e2e8f0',
-                padding: '1rem',
-                borderRadius: '0.75rem',
-                overflowX: 'auto'
-              }}
-            >
-              {JSON.stringify(digest, null, 2)}
+          {preview.competitor_summary && preview.competitor_summary.length > 0 && (
+            <Card title="Competitor signals" eyebrow="Delta vs you">
+              <ul className="space-y-3 text-sm text-white/70">
+                {preview.competitor_summary.map((item) => (
+                  <li
+                    key={item.competitor_id}
+                    className="flex items-center justify-between rounded-3xl border border-white/10 bg-white/[0.04] px-4 py-3"
+                  >
+                    <div>
+                      <p className="font-semibold text-white">{item.name}</p>
+                      {item.highlight && <p className="text-xs text-white/50">{item.highlight}</p>}
+                    </div>
+                    <span className={`tag ${item.sentiment_delta >= 0 ? 'bg-emerald/20 text-emerald' : 'bg-ruby/20 text-ruby'}`}>
+                      {item.sentiment_delta.toFixed(2)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+
+          <details className="rounded-3xl border border-white/10 bg-white/[0.04] p-4 text-sm text-white/70">
+            <summary className="cursor-pointer font-semibold text-white">View raw JSON</summary>
+            <pre className="mt-3 max-h-96 overflow-auto rounded-3xl bg-black/60 p-4 text-xs text-white/70">
+              {JSON.stringify(preview, null, 2)}
             </pre>
           </details>
-        </div>
-      )}
-
-      {!digest && !loading && (
-        <EmptyState
-          title="No digests generated yet"
-          description="Select a timeframe and run the digest to preview what will be emailed."
-        />
+        </>
+      ) : (
+        !digestMutation.isPending && (
+          <Card>
+            <EmptyState
+              title="Run your first digest"
+              description="Generate a weekly or monthly snapshot to preview what stakeholders will receive."
+              action={
+                <button type="button" className="btn-primary" onClick={handleRun}>
+                  Create preview
+                </button>
+              }
+            />
+          </Card>
+        )
       )}
     </div>
   );
 }
+
+
