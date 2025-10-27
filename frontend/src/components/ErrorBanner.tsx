@@ -7,7 +7,7 @@ export function ErrorBanner({ message, onRetry }: ErrorBannerProps) {
   return (
     <div
       role="alert"
-      className="glass flex items-center justify-between gap-4 border border-ruby/30 bg-ruby/10 px-4 py-3 text-sm text-white"
+      className="glass flex items-center justify-between gap-4 border border-ruby/30 bg-ruby/10 px-4 py-3 text-sm text-[var(--color-text-primary)]"
     >
       <span className="font-medium">{message}</span>
       {onRetry && (
@@ -24,3 +24,4 @@ export function ErrorBanner({ message, onRetry }: ErrorBannerProps) {
 }
 
 export default ErrorBanner;
+

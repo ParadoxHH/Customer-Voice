@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
-import { ShieldCheck, Palette } from 'lucide-react';
-import { persistDigestToken, getStoredDigestToken } from '../lib/api';
+import { Palette, Moon, Sun } from 'lucide-react';
 import Card from '../components/Card';
+import { useTheme } from '../lib/theme';
 
 const gradients = [
   { name: 'Sapphire', className: 'from-sapphire to-amethyst' },
@@ -10,58 +9,44 @@ const gradients = [
 ];
 
 export default function SettingsPage() {
-  const [token, setToken] = useState<string>('');
-  const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    const existing = getStoredDigestToken();
-    if (existing) setToken(existing);
-  }, []);
-
-  const ENV_API_URL = import.meta.env.VITE_API_URL ?? 'Not configured';
-
-  const handleSave = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    persistDigestToken(token.trim());
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
-  };
+  const { theme, setTheme, toggleTheme } = useTheme();
 
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-2">
         <h1 className="text-3xl font-semibold text-gradient">Settings</h1>
-        <p className="max-w-2xl text-sm text-white/65">
-          Update demo settings and see the colors used in the app.
+        <p className="max-w-xl text-sm text-white/65">
+          Tweak how the dashboard looks and preview the gem gradients we use for highlights.
         </p>
       </header>
 
-      <Card title="API" eyebrow="Info">
-        <dl className="space-y-3 text-sm text-white/70">
-          <div>
-            <dt className="text-xs uppercase tracking-wide text-white/50">API base URL</dt>
-            <dd className="mt-1 font-mono text-xs text-white/80">{ENV_API_URL}</dd>
-          </div>
-        </dl>
-      </Card>
-
-      <Card title="Digest token" eyebrow="Optional" className="space-y-4">
-        <form className="space-y-3" onSubmit={handleSave}>
-          <label className="flex flex-col gap-2 text-xs uppercase tracking-wide text-white/60">
-            Digest token (optional)
-            <input
-              className="rounded-3xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white focus-visible:ring-emerald"
-              value={token}
-              onChange={(event) => setToken(event.target.value)}
-              placeholder="Paste the token if you have one"
-            />
-          </label>
-          <button type="submit" className="btn-primary rounded-full px-6 py-3 text-sm">
-            <ShieldCheck className="h-4 w-4" />
-            Save token
+      <Card title="Theme" eyebrow="Pick a look" className="space-y-4">
+        <p className="text-sm text-white/65">
+          Choose the style that feels best. We remember your choice on this device.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            className={theme === 'dark' ? 'btn-primary rounded-full px-5 py-2 text-sm' : 'btn-secondary rounded-full px-5 py-2 text-sm'}
+            onClick={() => setTheme('dark')}
+            aria-pressed={theme === 'dark'}
+          >
+            <Moon className="h-4 w-4" />
+            Dark mode
           </button>
-          {saved && <p className="text-xs text-emerald">Token saved on this device.</p>}
-        </form>
+          <button
+            type="button"
+            className={theme === 'light' ? 'btn-primary rounded-full px-5 py-2 text-sm' : 'btn-secondary rounded-full px-5 py-2 text-sm'}
+            onClick={() => setTheme('light')}
+            aria-pressed={theme === 'light'}
+          >
+            <Sun className="h-4 w-4" />
+            Light mode
+          </button>
+          <button type="button" className="btn-ghost rounded-full px-5 py-2 text-sm" onClick={toggleTheme}>
+            Switch to {theme === 'dark' ? 'light' : 'dark'}
+          </button>
+        </div>
       </Card>
 
       <Card title="Theme preview" eyebrow="Gem gradients">
@@ -81,4 +66,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-

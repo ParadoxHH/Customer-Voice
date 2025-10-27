@@ -13,7 +13,7 @@ export function Stat({ label, value, trend, icon, className }: StatProps) {
   return (
     <div
       className={clsx(
-        'glass flex flex-col gap-2 rounded-3xl border border-white/10 px-4 py-3 text-white',
+        'glass flex flex-col gap-2 rounded-3xl border border-white/10 px-4 py-3 text-[var(--color-text-primary)]',
         className
       )}
     >
@@ -28,3 +28,4 @@ export function Stat({ label, value, trend, icon, className }: StatProps) {
 }
 
 export default Stat;
+

@@ -15,14 +15,14 @@ export function SideNav({ open, onClose, navItems, footer }: SideNavProps) {
   return (
     <aside
       className={clsx(
-        'fixed inset-y-0 left-0 z-40 w-72 transform bg-[rgba(12,17,24,0.9)] px-4 py-6 backdrop-blur-xl transition duration-300 ease-out md:static md:translate-x-0',
+        'fixed inset-y-0 left-0 z-40 w-72 transform bg-[var(--color-side)] px-4 py-6 text-[var(--color-text-primary)] backdrop-blur-xl transition duration-300 ease-out md:static md:translate-x-0',
         open ? 'translate-x-0' : '-translate-x-full'
       )}
       aria-label="Sidebar navigation"
     >
       <div className="hidden items-center gap-3 px-2 md:flex">
         <img src={logo} alt="Customer Voice logo" className="h-8 w-8 rounded-2xl shadow-lg shadow-emerald/30" />
-        <span className="text-sm font-semibold text-white">Customer Voice</span>
+        <span className="text-sm font-semibold text-[var(--color-text-primary)]">Customer Voice</span>
       </div>
       <nav className="mt-6 space-y-1">
         {navItems.map((item) => (
@@ -39,7 +39,7 @@ export function SideNav({ open, onClose, navItems, footer }: SideNavProps) {
             }
             onClick={onClose}
           >
-            <span className="text-white">{item.icon}</span>
+            <span className="text-[var(--color-text-primary)]">{item.icon}</span>
             {item.label}
           </NavLink>
         ))}

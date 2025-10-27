@@ -27,7 +27,7 @@ function App() {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-obsidian text-white md:pl-72">
+    <div className="flex min-h-screen bg-[var(--color-background)] text-[var(--color-text-primary)] transition-colors duration-300 md:pl-72">
       <SideNav
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
@@ -66,3 +66,4 @@ function App() {
 }
 
 export default App;
+
