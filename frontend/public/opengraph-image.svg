@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="gemGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F52BA" />
+      <stop offset="50%" stop-color="#00A86B" />
+      <stop offset="100%" stop-color="#E31B54" />
+    </linearGradient>
+    <filter id="noise">
+      <feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="4" stitchTiles="stitch" />
+    </filter>
+  </defs>
+  <rect width="1200" height="630" fill="#0B0F14"/>
+  <rect width="1200" height="630" fill="url(#gemGradient)" opacity="0.18"/>
+  <rect width="1200" height="630" filter="url(#noise)" opacity="0.12"/>
+  <g transform="translate(120 140)">
+    <rect width="960" height="360" rx="48" fill="rgba(11,15,20,0.76)" stroke="rgba(255,255,255,0.18)" stroke-width="2"/>
+    <text x="60" y="150" fill="white" font-family="Inter, sans-serif" font-size="72" font-weight="700">
+      Customer Voice Dashboard
+    </text>
+    <text x="60" y="220" fill="rgba(255,255,255,0.75)" font-family="Inter, sans-serif" font-size="32">
+      Turn customer reviews into clear answers with glassmorphism clarity.
+    </text>
+    <rect x="60" y="260" width="280" height="64" rx="32" fill="url(#gemGradient)"/>
+    <text x="88" y="303" fill="white" font-family="Inter, sans-serif" font-size="28" font-weight="600">
+      Explore the Live Demo
+    </text>
+  </g>
+</svg>
