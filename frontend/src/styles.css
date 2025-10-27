@@ -89,6 +89,11 @@ a {
   }
 }
 
+[data-theme='light'] .text-gradient {
+  background: none !important;
+  color: var(--color-text-primary) !important;
+}
+
 [data-theme='light'] .text-white {
   color: var(--color-text-primary) !important;
 }
