@@ -51,7 +51,10 @@ export default function DashboardPage() {
       return null;
     }
     const total = data.pagination.total_items;
-    const lastPoint = data.sentiment_trend.at(-1);
+    const lastPoint =
+      data.sentiment_trend.length > 0
+        ? data.sentiment_trend[data.sentiment_trend.length - 1]
+        : undefined;
     const averageScore = lastPoint?.average_score ?? 0;
     const topSource = data.source_breakdown[0];
     return {
