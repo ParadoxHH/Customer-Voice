@@ -54,7 +54,7 @@ export default function CompetitorsPage() {
       <header className="flex flex-col gap-2">
         <h1 className="text-3xl font-semibold text-gradient">Competitors</h1>
         <p className="max-w-2xl text-sm text-white/65">
-          Benchmark your experience against alternatives. Track how sentiment, topics, and share-of-voice evolve for every competitor.
+          See how you stack up next to other products using simple review stats.
         </p>
       </header>
 
@@ -119,7 +119,7 @@ export default function CompetitorsPage() {
 
       <Card title="Competitor roster" eyebrow={`${list.data?.pagination.total_items ?? 0} tracked`}>
         {list.isLoading ? (
-          <Loader label="Loading competitors..." />
+          <Loader label="Loading list..." />
         ) : list.data?.items.length ? (
           <div className="grid gap-4 md:grid-cols-2">
             {list.data.items.map((competitor) => (
@@ -172,7 +172,7 @@ export default function CompetitorsPage() {
                     className="btn-secondary rounded-full px-4 py-2 text-xs"
                     onClick={() => handleCompare(competitor.competitor_id)}
                   >
-                    Benchmark
+                    Compare
                   </button>
                 </div>
               </article>
@@ -181,7 +181,7 @@ export default function CompetitorsPage() {
         ) : (
           <EmptyState
             title="No competitors tracked"
-            description="Add competing products to unlock comparative sentiment and topic deltas."
+            description="Add another company to start the side-by-side view."
             action={
               <button
                 type="button"
@@ -196,7 +196,7 @@ export default function CompetitorsPage() {
         )}
       </Card>
 
-      {comparisonLoading && <Loader label="Building comparison..." />}
+      {comparisonLoading && <Loader label="Crunching the numbers..." />}
 
       {comparison && (
         <Card title={`You vs. ${comparison.competitor.name}`} eyebrow="Sentiment delta">
@@ -205,7 +205,7 @@ export default function CompetitorsPage() {
             <SentimentCard title={comparison.competitor.name} summary={comparison.competitor_sentiment} />
           </div>
           <div className="mt-6 space-y-3">
-            <h3 className="text-sm font-semibold text-white">Topic deltas</h3>
+            <h3 className="text-sm font-semibold text-white">Topic changes</h3>
             {comparison.top_topics.length ? (
               <table className="w-full text-left text-sm text-white/70">
                 <thead className="text-xs uppercase text-white/40">
@@ -239,7 +239,7 @@ export default function CompetitorsPage() {
       <ConfirmModal
         open={Boolean(pendingDelete)}
         title="Remove competitor?"
-        description="Historic digests and insights stay intact. This just removes the record from your active list."
+        description="This only removes the company from this list. Past reports stay the same."
         confirmLabel="Remove competitor"
         icon={<Award className="h-5 w-5" />}
         onCancel={() => setPendingDelete(null)}
@@ -286,4 +286,5 @@ function SentimentCard({ title, summary }: { title: string; summary: SentimentSu
     </div>
   );
 }
+
 

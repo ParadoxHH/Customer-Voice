@@ -89,7 +89,7 @@ export default function DashboardPage() {
           <p className="text-xs uppercase tracking-[0.35em] text-white/45">Overview</p>
           <h1 className="text-3xl font-semibold text-gradient">Customer Voice Dashboard</h1>
           <p className="mt-2 max-w-xl text-sm text-white/65">
-            Track sentiment shifts, highlight rising topics, and coordinate faster responses across every review channel.
+            See how people feel, what they mention most, and which places need a follow-up.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -109,7 +109,7 @@ export default function DashboardPage() {
 
       <div className="flex flex-wrap items-center gap-3">
         <label className="flex items-center gap-2 text-xs text-white/60">
-          Sentiment
+          Mood
           <select
             className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-white focus-visible:ring-emerald"
             value={sentimentFilter}
@@ -132,7 +132,7 @@ export default function DashboardPage() {
           disabled={importSampleMutation.isPending}
         >
           <CloudDownload className="h-4 w-4" />
-          {importSampleMutation.isPending ? 'Importing...' : 'Import Sample Data'}
+          {importSampleMutation.isPending ? 'Importing...' : 'Add Sample Reviews'}
         </button>
         <button
           type="button"
@@ -150,8 +150,8 @@ export default function DashboardPage() {
       {!isLoading && !error && !hasData && (
         <Card>
           <EmptyState
-            title="We need fresh voices"
-            description="Import sample data to explore the dashboard or connect a live data source to start listening."
+            title="No reviews yet"
+            description="Load the sample set or hook up a source to see real numbers."
             action={
               <>
                 <button
@@ -161,10 +161,10 @@ export default function DashboardPage() {
                     handleImportSample().catch((err) => console.error(err));
                   }}
                 >
-                  Import Sample Data
+                  Add Sample Reviews
                 </button>
                 <button type="button" className="btn-secondary" onClick={() => navigate('/sources')}>
-                  Connect Sources
+                  Connect a Source
                 </button>
               </>
             }
@@ -178,40 +178,40 @@ export default function DashboardPage() {
           {summary && (
             <div className="grid gap-4 md:grid-cols-3">
               <Stat
-                label="Total reviews"
+                label="Reviews"
                 value={formatNumber(summary.totalReviews)}
-                trend={`Covering the last ${range.days} days`}
+                trend={`Last ${range.days} days`}
               />
               <Stat
-                label="Sentiment score"
+                label="Mood score"
                 value={summary.avgScore.toFixed(2)}
-                trend="Weighted average across sources"
+                trend="Higher = happier"
               />
               <Stat
-                label="Happiest source"
+                label="Happiest channel"
                 value={summary.happiestSource?.source_name ?? 'n/a'}
                 trend={
                   summary.happiestSource
-                    ? `Avg ${summary.happiestSource.average_sentiment_score.toFixed(2)}`
-                    : 'Connect additional sources'
+                    ? `Score ${summary.happiestSource.average_sentiment_score.toFixed(2)}`
+                    : 'Add another channel'
                 }
               />
             </div>
           )}
 
-          <Card title="Sentiment trajectory" eyebrow={`Last ${range.days} days`} id="sentiment-line">
+          <Card title="Mood over time" eyebrow={`Last ${range.days} days`} id="sentiment-line">
             <div data-testid="sentiment-line" className="h-[280px]">
               <ChartLine data={data.sentiment_trend} />
             </div>
           </Card>
 
-          <Card title="Topic heatmap" eyebrow="Top conversations" id="topic-heatmap">
+          <Card title="Hot topics" eyebrow="Most common themes" id="topic-heatmap">
             <div data-testid="topic-heatmap" className="h-[320px]">
               <Heatmap data={data.topic_distribution} />
             </div>
           </Card>
 
-          <Card title="Source performance" eyebrow="Channels" className="space-y-4">
+          <Card title="Channel snapshot" eyebrow="Where feedback comes from" className="space-y-4">
             <div className="card-grid">
               {data.source_breakdown.map((source) => (
                 <SourceCard key={source.source_id} source={source} />
@@ -263,11 +263,12 @@ function SourceCard({ source }: { source: SourceBreakdownItem }) {
         <h3 className="text-sm font-semibold text-white">{source.source_name || 'Unnamed source'}</h3>
         <span className="tag bg-emerald/20 text-emerald">{source.review_count} reviews</span>
       </div>
-      <p className="text-xs text-white/60">Average sentiment</p>
+      <p className="text-xs text-white/60">Average mood</p>
       <p className="text-xl font-semibold text-white">
         {source.average_sentiment_score.toFixed(2)}
       </p>
     </div>
   );
 }
+
 

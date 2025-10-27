@@ -76,13 +76,13 @@ export default function DigestsPage() {
       <header className="flex flex-col gap-2">
         <h1 className="text-3xl font-semibold text-gradient">Digests</h1>
         <p className="max-w-xl text-sm text-white/65">
-          Generate, preview, and schedule automated digests so stakeholders stay aligned every Monday.
+          Make a quick summary you can email or share with the team.
         </p>
       </header>
 
       {error && <ErrorBanner message={error} />}
 
-      <Card title="Digest controls" eyebrow="Timeframe">
+      <Card title="Create a digest" eyebrow="Pick a range">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex gap-2 rounded-full border border-white/10 bg-white/5 p-1 text-xs">
             <button
@@ -117,7 +117,7 @@ export default function DigestsPage() {
         </button>
       </Card>
 
-      {digestMutation.isPending && <Loader label="Assembling digest..." />}
+      {digestMutation.isPending && <Loader label="Making your digest..." />}
 
       {preview ? (
         <>
@@ -235,8 +235,8 @@ export default function DigestsPage() {
         !digestMutation.isPending && (
           <Card>
             <EmptyState
-              title="Run your first digest"
-              description="Generate a weekly or monthly snapshot to preview what stakeholders will receive."
+              title="No digest yet"
+              description="Choose a time range and press run to see a sample report."
               action={
                 <button type="button" className="btn-primary" onClick={handleRun}>
                   Create preview
@@ -249,5 +249,6 @@ export default function DigestsPage() {
     </div>
   );
 }
+
 
 

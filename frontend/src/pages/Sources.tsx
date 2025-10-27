@@ -24,6 +24,17 @@ interface SampleResponse {
 
 const STORAGE_KEY = 'cv_sources';
 
+const Hint = ({ text }: { text: string }) => (
+  <span
+    className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full border border-white/20 text-[10px] text-white/60"
+    role="img"
+    aria-label={text}
+    title={text}
+  >
+    ?
+  </span>
+);
+
 const newSource = (): ConnectedSource => ({
   id: crypto.randomUUID(),
   name: '',
@@ -105,13 +116,13 @@ export default function SourcesPage() {
     setMessage(null);
 
     if (!form.name.trim()) {
-      setError('Give this source a friendly name so teammates can recognise it.');
+      setError('Please add a short name so everyone knows what this source is.');
       return;
     }
 
     setSources((prev) => [...prev, form]);
     setForm(newSource());
-    setMessage(`Saved    ${form.name}   . Remember to ingest reviews to populate the dashboard.`);
+    setMessage(`Saved "${form.name}". You can now add reviews for it.`);
   };
 
   const handleImportSample = async () => {
@@ -137,9 +148,9 @@ export default function SourcesPage() {
         });
         return merged;
       });
-      setMessage('Sample data ingested. Visit the dashboard to explore the insights.');
+      setMessage('Sample reviews added. Check the dashboard to see them.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to import sample data.');
+      setError(err instanceof Error ? err.message : 'Could not load the sample reviews. Please try again.');
     }
   };
 
@@ -154,7 +165,7 @@ export default function SourcesPage() {
       <header className="flex flex-col gap-2">
         <h1 className="text-3xl font-semibold text-gradient">Sources</h1>
         <p className="max-w-xl text-sm text-white/65">
-          Capture the metadata for each intake channel. These records stay local until you ingest reviews or connect live automations.
+          Save the places where reviews live. This list only stays on this device until you add a real sync.
         </p>
       </header>
 
@@ -168,7 +179,10 @@ export default function SourcesPage() {
       <Card title="Connect a source" eyebrow="Metadata">
         <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
           <label className="flex flex-col gap-2 text-xs uppercase tracking-wide text-white/60">
-            Name
+            <span className="flex items-center gap-2">
+              Name
+              <Hint text="Give the source a clear title, like Google Play Reviews." />
+            </span>
             <input
               className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white focus-visible:ring-emerald"
               name="name"
@@ -179,7 +193,10 @@ export default function SourcesPage() {
             />
           </label>
           <label className="flex flex-col gap-2 text-xs uppercase tracking-wide text-white/60">
-            Platform
+            <span className="flex items-center gap-2">
+              Platform
+              <Hint text="Short tag such as play_store, yelp, or email (optional)." />
+            </span>
             <input
               className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white focus-visible:ring-emerald"
               name="platform"
@@ -189,7 +206,10 @@ export default function SourcesPage() {
             />
           </label>
           <label className="flex flex-col gap-2 text-xs uppercase tracking-wide text-white/60 md:col-span-2">
-            External ID
+            <span className="flex items-center gap-2">
+              ID
+              <Hint text="Any code you use to match reviews (optional)." />
+            </span>
             <input
               className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white focus-visible:ring-emerald"
               name="external_id"
@@ -199,7 +219,10 @@ export default function SourcesPage() {
             />
           </label>
           <label className="flex flex-col gap-2 text-xs uppercase tracking-wide text-white/60 md:col-span-2">
-            Source URL
+            <span className="flex items-center gap-2">
+              Link
+              <Hint text="Direct link to the review page (optional)." />
+            </span>
             <input
               className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white focus-visible:ring-emerald"
               name="url"
@@ -217,10 +240,10 @@ export default function SourcesPage() {
         </form>
       </Card>
 
-      <Card title="Quick actions" eyebrow="Manual ingest">
+      <Card title="Sample reviews" eyebrow="One-click import">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <p className="max-w-xl text-sm text-white/65">
-            Pull in the sample dataset or sync connected sources manually. This fires the `/ingest` endpoint on the backend.
+            Use the button to load the demo reviews or refresh your own sources.
           </p>
           <div className="flex flex-wrap gap-3">
             <button
@@ -232,7 +255,7 @@ export default function SourcesPage() {
               disabled={importSampleMutation.isPending}
             >
               <DatabaseZap className="h-4 w-4" />
-              {importSampleMutation.isPending ? 'Syncing...' : 'Fetch New Reviews'}
+              {importSampleMutation.isPending ? 'Loading...' : 'Fetch sample reviews'}
             </button>
           </div>
         </div>
@@ -254,7 +277,7 @@ export default function SourcesPage() {
                 <div>
                   <h3 className="text-sm font-semibold text-white">{source.name}</h3>
                   <p className="text-xs text-white/60">
-                    Platform: {source.platform || 'n/a'}    External ID: {source.external_id || 'n/a'}
+                    Platform: {source.platform || 'n/a'} | External ID: {source.external_id || 'n/a'}
                   </p>
                   {source.url && (
                     <a
@@ -299,7 +322,7 @@ export default function SourcesPage() {
       <ConfirmModal
         open={Boolean(pendingDelete)}
         title="Remove source?"
-        description={`This only removes the source from your local list. Reviews already ingested remain in the system.`}
+        description={`This only removes the source from this list. Already added reviews stay on the dashboard.`}
         confirmLabel="Remove source"
         icon={<Trash2 className="h-5 w-5" />}
         onCancel={() => setPendingDelete(null)}
@@ -308,6 +331,16 @@ export default function SourcesPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
 
 
 

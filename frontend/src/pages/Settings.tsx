@@ -32,11 +32,11 @@ export default function SettingsPage() {
       <header className="flex flex-col gap-2">
         <h1 className="text-3xl font-semibold text-gradient">Settings</h1>
         <p className="max-w-2xl text-sm text-white/65">
-          Configure API access, demo tokens, and explore the gem-gradient theme used across the Customer Voice experience.
+          Update demo settings and see the colors used in the app.
         </p>
       </header>
 
-      <Card title="API configuration" eyebrow="Read-only">
+      <Card title="API" eyebrow="Info">
         <dl className="space-y-3 text-sm text-white/70">
           <div>
             <dt className="text-xs uppercase tracking-wide text-white/50">API base URL</dt>
@@ -45,22 +45,22 @@ export default function SettingsPage() {
         </dl>
       </Card>
 
-      <Card title="Digest token" eyebrow="Demo secret" className="space-y-4">
+      <Card title="Digest token" eyebrow="Optional" className="space-y-4">
         <form className="space-y-3" onSubmit={handleSave}>
           <label className="flex flex-col gap-2 text-xs uppercase tracking-wide text-white/60">
-            Token (stored locally)
+            Digest token (optional)
             <input
               className="rounded-3xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white focus-visible:ring-emerald"
               value={token}
               onChange={(event) => setToken(event.target.value)}
-              placeholder="Bearer token used for demo digests"
+              placeholder="Paste the token if you have one"
             />
           </label>
           <button type="submit" className="btn-primary rounded-full px-6 py-3 text-sm">
             <ShieldCheck className="h-4 w-4" />
             Save token
           </button>
-          {saved && <p className="text-xs text-emerald">Token stored locally.</p>}
+          {saved && <p className="text-xs text-emerald">Token saved on this device.</p>}
         </form>
       </Card>
 
@@ -73,7 +73,7 @@ export default function SettingsPage() {
             >
               <Palette className="h-5 w-5" />
               <p className="mt-4 text-sm font-semibold">{gradient.name}</p>
-              <p className="text-xs text-white/70">Used for accent surfaces and call-to-action states.</p>
+              <p className="text-xs text-white/70">Used on buttons and highlights.</p>
             </div>
           ))}
         </div>
@@ -81,3 +81,4 @@ export default function SettingsPage() {
     </div>
   );
 }
+
