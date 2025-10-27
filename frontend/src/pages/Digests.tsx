@@ -75,7 +75,7 @@ export default function DigestsPage() {
           </button>
         </div>
         <p style={{ marginTop: '0.75rem', fontSize: '0.9rem', color: '#475569' }}>
-          Timeframe: <strong>{new Date(timeframe.start).toLocaleString()}</strong>{' -> '}
+          Timeframe: <strong>{new Date(timeframe.start).toLocaleString()}</strong> &rarr;{' '}
           <strong>{new Date(timeframe.end).toLocaleString()}</strong>
         </p>
         <button type="button" onClick={handleRun} disabled={loading}>
