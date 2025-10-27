@@ -16,13 +16,13 @@ export default function SettingsPage() {
       <header className="flex flex-col gap-2">
         <h1 className="text-3xl font-semibold text-gradient">Settings</h1>
         <p className="max-w-xl text-sm text-white/65">
-          Tweak how the dashboard looks and preview the gem gradients we use for highlights.
+          Change the look and preview the colors we use around the app.
         </p>
       </header>
 
       <Card title="Theme" eyebrow="Pick a look" className="space-y-4">
         <p className="text-sm text-white/65">
-          Choose the style that feels best. We remember your choice on this device.
+          Choose the style you prefer. We remember this on your device.
         </p>
         <div className="flex flex-wrap gap-3">
           <button

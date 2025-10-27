@@ -13,23 +13,21 @@
   --color-side: rgba(12, 17, 24, 0.94);
   --color-tag-bg: rgba(255, 255, 255, 0.12);
   --color-tag-text: rgba(255, 255, 255, 0.78);
-  --gem-sapphire: #0f52ba;
-  --gem-emerald: #00a86b;
-  --gem-ruby: #e31b54;
-  --gem-amethyst: #9966cc;
+  --gradient-primary: linear-gradient(135deg, #0F52BA 0%, #00A86B 50%, #E31B54 100%);
 }
 
 [data-theme='light'] {
   color-scheme: light;
-  --color-background: #f8fafc;
-  --color-surface: rgba(255, 255, 255, 0.9);
-  --color-border: rgba(15, 23, 42, 0.12);
+  --color-background: #fdf3de;
+  --color-surface: linear-gradient(140deg, rgba(255, 255, 255, 0.95), rgba(254, 245, 229, 0.82));
+  --color-border: rgba(209, 213, 219, 0.7);
   --color-text-primary: #1f2937;
-  --color-text-secondary: rgba(30, 41, 59, 0.65);
-  --color-nav: rgba(255, 255, 255, 0.95);
-  --color-side: rgba(248, 250, 252, 0.95);
-  --color-tag-bg: rgba(15, 23, 42, 0.08);
-  --color-tag-text: rgba(17, 24, 39, 0.75);
+  --color-text-secondary: rgba(55, 65, 81, 0.75);
+  --color-nav: rgba(255, 255, 255, 0.9);
+  --color-side: rgba(255, 248, 232, 0.92);
+  --color-tag-bg: rgba(230, 232, 240, 0.8);
+  --color-tag-text: rgba(45, 55, 72, 0.82);
+  --gradient-primary: linear-gradient(135deg, #4f8df6 0%, #34d399 50%, #f9738f 100%);
 }
 
 body {
@@ -37,6 +35,10 @@ body {
   background-color: var(--color-background);
   color: var(--color-text-primary);
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.bg-gem-gradient {
+  background-image: var(--gradient-primary) !important;
 }
 
 a {
@@ -53,7 +55,8 @@ a {
   }
 
   .btn-primary {
-    @apply btn bg-gem-gradient text-white shadow-lg shadow-emerald/30;
+    @apply btn text-white shadow-lg shadow-emerald/30;
+    background-image: var(--gradient-primary);
   }
 
   .btn-secondary {
@@ -143,4 +146,10 @@ a {
 
 [data-theme='light'] .border-white\/30 {
   border-color: rgba(15, 23, 42, 0.3) !important;
+}
+
+[data-theme='light'] .glass {
+  background: var(--color-surface) !important;
+  border-color: rgba(209, 213, 219, 0.8) !important;
+  box-shadow: 0 20px 45px rgba(17, 24, 39, 0.08);
 }
