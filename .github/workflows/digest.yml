@@ -1,0 +1,20 @@
+name: Weekly Digest Trigger
+
+on:
+  schedule:
+    - cron: "0 12 * * MON"
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call protected digest endpoint
+        env:
+          DIGEST_TOKEN: ${{ secrets.DIGEST_TOKEN }}
+          RENDER_API_URL: ${{ secrets.RENDER_API_URL }}
+        run: |
+          curl -sS -X POST \
+            -H "Authorization: Bearer ${DIGEST_TOKEN}" \
+            "${RENDER_API_URL}/digest/run" \
+            | jq .

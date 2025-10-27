@@ -1,0 +1,17 @@
+#!/usr/bin/env python
+"""Generate new Alembic migration script."""
+
+from __future__ import annotations
+
+revision = ${repr(up_revision)}
+down_revision = ${repr(down_revision)}
+branch_labels = ${repr(branch_labels)}
+depends_on = ${repr(depends_on)}
+
+
+def upgrade() -> None:
+    pass
+
+
+def downgrade() -> None:
+    pass

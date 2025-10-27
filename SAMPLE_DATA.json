@@ -1,0 +1,338 @@
+{
+  "sources": [
+    {
+      "id": "9f4f7d44-7f65-4f22-b7bb-3f66886dbaf4",
+      "name": "Customer Voice iOS",
+      "platform": "app_store",
+      "external_id": "com.customer.voice.ios",
+      "url": "https://apps.apple.com/app/id000000",
+      "created_at": "2025-01-01T12:00:00Z"
+    },
+    {
+      "id": "3f735a2f-4d79-4dbf-8f7a-5f00d0c4d353",
+      "name": "Customer Voice Android",
+      "platform": "play_store",
+      "external_id": "com.customer.voice.android",
+      "url": "https://play.google.com/store/apps/details?id=com.customer.voice.android",
+      "created_at": "2025-01-01T12:05:00Z"
+    },
+    {
+      "id": "1ae7fbc4-a66a-4dbe-9bcf-c0af8e0be53e",
+      "name": "Quarterly NPS Survey",
+      "platform": "survey",
+      "external_id": "nps-q1-2025",
+      "created_at": "2025-01-05T08:00:00Z"
+    }
+  ],
+  "competitors": [
+    {
+      "id": "4de8593f-2ae4-4bcc-8da9-1b785c67fee7",
+      "name": "VoicePulse",
+      "url": "https://voicepulse.example.com",
+      "description": "Established customer feedback tool with heavy analytics focus.",
+      "tags": ["enterprise", "analytics"],
+      "created_at": "2025-01-10T09:00:00Z"
+    }
+  ],
+  "topics": [
+    {
+      "id": "a9c4e0ab-0f4b-46c8-9cbe-1ce1b579cb70",
+      "topic_label": "Dashboard UX",
+      "created_at": "2025-01-02T10:00:00Z"
+    },
+    {
+      "id": "1ec33cb2-0ea9-40e2-808d-d4d41ae3a3de",
+      "topic_label": "Email Digests",
+      "created_at": "2025-01-02T10:05:00Z"
+    },
+    {
+      "id": "e0656e46-f279-4b2c-a643-fd5e29c52c0d",
+      "topic_label": "Integrations",
+      "created_at": "2025-01-02T10:10:00Z"
+    },
+    {
+      "id": "fa2b5abc-6fb8-45c2-8a5b-b56459c5ee8d",
+      "topic_label": "Support Response",
+      "created_at": "2025-01-02T10:15:00Z"
+    }
+  ],
+  "reviews": [
+    {
+      "id": "b7dc1876-7cd6-4f30-a521-9fa08070b215",
+      "source_id": "9f4f7d44-7f65-4f22-b7bb-3f66886dbaf4",
+      "source_review_id": "IOS-1001",
+      "title": "Exactly what our CX team needed",
+      "body": "The new dashboards are fast and clear. Love seeing sentiment trends per channel.",
+      "rating": 5,
+      "author_name": "CX Lead",
+      "language": "en",
+      "sentiment_label": "Positive",
+      "sentiment_score": 0.86,
+      "published_at": "2025-03-01T09:12:00Z",
+      "created_at": "2025-03-01T09:15:00Z"
+    },
+    {
+      "id": "360c0867-56a0-4b46-bc23-77dce556328e",
+      "source_id": "9f4f7d44-7f65-4f22-b7bb-3f66886dbaf4",
+      "source_review_id": "IOS-1002",
+      "title": "Digest emails arrive late",
+      "body": "Great insights but the weekly digest shows up a day late making Monday standups harder.",
+      "rating": 3,
+      "author_name": "SupportOps",
+      "language": "en",
+      "sentiment_label": "Neutral",
+      "sentiment_score": 0.05,
+      "published_at": "2025-03-02T14:30:00Z",
+      "created_at": "2025-03-02T14:31:00Z"
+    },
+    {
+      "id": "c5e5168b-cb0f-44b4-a53a-67d6354713a0",
+      "source_id": "9f4f7d44-7f65-4f22-b7bb-3f66886dbaf4",
+      "source_review_id": "IOS-1003",
+      "title": "Crashes on export",
+      "body": "Exporting topic data to CSV still crashes on larger ranges.",
+      "rating": 2,
+      "author_name": "Ops Analyst",
+      "language": "en",
+      "sentiment_label": "Negative",
+      "sentiment_score": -0.62,
+      "published_at": "2025-03-03T11:05:00Z",
+      "created_at": "2025-03-03T11:06:00Z"
+    },
+    {
+      "id": "c67b5826-1851-46e1-b7c6-1ae57fd5bde5",
+      "source_id": "3f735a2f-4d79-4dbf-8f7a-5f00d0c4d353",
+      "source_review_id": "AND-2001",
+      "title": "Mobile alerts are clutch",
+      "body": "Push alerts let me know when sentiment dips so we can reach out quickly.",
+      "rating": 5,
+      "author_name": "Store Manager",
+      "language": "en",
+      "sentiment_label": "Positive",
+      "sentiment_score": 0.91,
+      "published_at": "2025-03-01T15:45:00Z",
+      "created_at": "2025-03-01T15:47:00Z"
+    },
+    {
+      "id": "51dc8e35-cc88-4cf2-92c6-f63115ea9a85",
+      "source_id": "3f735a2f-4d79-4dbf-8f7a-5f00d0c4d353",
+      "source_review_id": "AND-2002",
+      "title": "Insights slow on cellular",
+      "body": "Charts take a while to populate when on LTE compared to Wi-Fi.",
+      "rating": 3,
+      "language": "en",
+      "sentiment_label": "Neutral",
+      "sentiment_score": -0.02,
+      "published_at": "2025-03-04T09:20:00Z",
+      "created_at": "2025-03-04T09:22:00Z"
+    },
+    {
+      "id": "d55e3c68-298f-4d12-9711-f20e67698a99",
+      "source_id": "3f735a2f-4d79-4dbf-8f7a-5f00d0c4d353",
+      "source_review_id": "AND-2003",
+      "title": "Need HubSpot integration",
+      "body": "Still waiting on HubSpot sync to avoid manual exports.",
+      "rating": 2,
+      "language": "en",
+      "sentiment_label": "Negative",
+      "sentiment_score": -0.48,
+      "published_at": "2025-03-05T08:10:00Z",
+      "created_at": "2025-03-05T08:12:00Z"
+    },
+    {
+      "id": "72262970-6f8f-4b5f-a7eb-16ff1fd17438",
+      "source_id": "1ae7fbc4-a66a-4dbe-9bcf-c0af8e0be53e",
+      "source_review_id": "NPS-3001",
+      "title": "Executive summary is spot on",
+      "body": "The digest surfaced our largest detractor cluster and helped us prioritize training.",
+      "rating": 4,
+      "language": "en",
+      "sentiment_label": "Positive",
+      "sentiment_score": 0.67,
+      "published_at": "2025-03-01T00:00:00Z",
+      "created_at": "2025-03-01T00:05:00Z"
+    },
+    {
+      "id": "351e8780-1e1b-4949-9e6d-c16389467b4a",
+      "source_id": "1ae7fbc4-a66a-4dbe-9bcf-c0af8e0be53e",
+      "source_review_id": "NPS-3002",
+      "title": "Topics feel generic",
+      "body": "Auto-topic labels are broad. Would love renamed clusters per department.",
+      "rating": 3,
+      "language": "en",
+      "sentiment_label": "Neutral",
+      "sentiment_score": -0.08,
+      "published_at": "2025-03-02T00:00:00Z",
+      "created_at": "2025-03-02T00:04:00Z"
+    },
+    {
+      "id": "b4d74b6d-12b5-419a-9ca2-19de50f45d76",
+      "source_id": "1ae7fbc4-a66a-4dbe-9bcf-c0af8e0be53e",
+      "source_review_id": "NPS-3003",
+      "title": "Too many login prompts",
+      "body": "Single sign-on logs me out every few hours which breaks focus groups.",
+      "rating": 2,
+      "language": "en",
+      "sentiment_label": "Negative",
+      "sentiment_score": -0.56,
+      "published_at": "2025-03-03T00:00:00Z",
+      "created_at": "2025-03-03T00:04:00Z"
+    },
+    {
+      "id": "4b7d8ae8-19b6-4a9d-9d52-96feab54c629",
+      "source_id": "9f4f7d44-7f65-4f22-b7bb-3f66886dbaf4",
+      "source_review_id": "IOS-1004",
+      "title": "Competitor view is helpful",
+      "body": "Seeing VoicePulse topics alongside ours made QBR prep simple.",
+      "rating": 4,
+      "language": "en",
+      "sentiment_label": "Positive",
+      "sentiment_score": 0.52,
+      "published_at": "2025-03-06T07:05:00Z",
+      "created_at": "2025-03-06T07:06:00Z",
+      "competitor_id": "4de8593f-2ae4-4bcc-8da9-1b785c67fee7"
+    },
+    {
+      "id": "d2d64d8b-0f0a-4e22-97cf-9f901bbe315d",
+      "source_id": "3f735a2f-4d79-4dbf-8f7a-5f00d0c4d353",
+      "source_review_id": "AND-2004",
+      "title": "Offline mode missing",
+      "body": "Field teams want to log notes offline then sync later.",
+      "rating": 2,
+      "language": "en",
+      "sentiment_label": "Negative",
+      "sentiment_score": -0.42,
+      "published_at": "2025-03-06T11:30:00Z",
+      "created_at": "2025-03-06T11:31:00Z"
+    },
+    {
+      "id": "4e34ab9d-72f5-45db-8705-9f9e3d4b0c18",
+      "source_id": "9f4f7d44-7f65-4f22-b7bb-3f66886dbaf4",
+      "source_review_id": "IOS-1005",
+      "title": "Great but needs multilingual support",
+      "body": "Our Montreal team submits French feedback that still reads as English, so topics get confused.",
+      "rating": 3,
+      "language": "fr",
+      "sentiment_label": "Neutral",
+      "sentiment_score": -0.04,
+      "published_at": "2025-03-06T16:45:00Z",
+      "created_at": "2025-03-06T16:46:00Z"
+    },
+    {
+      "id": "29a01d24-3c7a-4af1-ad75-2145301b41af",
+      "source_id": "1ae7fbc4-a66a-4dbe-9bcf-c0af8e0be53e",
+      "source_review_id": "NPS-3004",
+      "title": "Sentiment accuracy improved",
+      "body": "Latest release tags complex comments correctly which reduces manual overrides.",
+      "rating": 5,
+      "language": "en",
+      "sentiment_label": "Positive",
+      "sentiment_score": 0.74,
+      "published_at": "2025-03-06T00:00:00Z",
+      "created_at": "2025-03-06T00:04:00Z"
+    }
+  ],
+  "review_topics": [
+    {
+      "review_id": "b7dc1876-7cd6-4f30-a521-9fa08070b215",
+      "topic_id": "a9c4e0ab-0f4b-46c8-9cbe-1ce1b579cb70",
+      "topic_label": "Dashboard UX",
+      "topic_confidence": 0.91
+    },
+    {
+      "review_id": "360c0867-56a0-4b46-bc23-77dce556328e",
+      "topic_id": "1ec33cb2-0ea9-40e2-808d-d4d41ae3a3de",
+      "topic_label": "Email Digests",
+      "topic_confidence": 0.78
+    },
+    {
+      "review_id": "c5e5168b-cb0f-44b4-a53a-67d6354713a0",
+      "topic_id": "a9c4e0ab-0f4b-46c8-9cbe-1ce1b579cb70",
+      "topic_label": "Dashboard UX",
+      "topic_confidence": 0.84
+    },
+    {
+      "review_id": "c67b5826-1851-46e1-b7c6-1ae57fd5bde5",
+      "topic_id": "fa2b5abc-6fb8-45c2-8a5b-b56459c5ee8d",
+      "topic_label": "Support Response",
+      "topic_confidence": 0.69
+    },
+    {
+      "review_id": "51dc8e35-cc88-4cf2-92c6-f63115ea9a85",
+      "topic_id": "a9c4e0ab-0f4b-46c8-9cbe-1ce1b579cb70",
+      "topic_label": "Dashboard UX",
+      "topic_confidence": 0.72
+    },
+    {
+      "review_id": "d55e3c68-298f-4d12-9711-f20e67698a99",
+      "topic_id": "e0656e46-f279-4b2c-a643-fd5e29c52c0d",
+      "topic_label": "Integrations",
+      "topic_confidence": 0.89
+    },
+    {
+      "review_id": "72262970-6f8f-4b5f-a7eb-16ff1fd17438",
+      "topic_id": "1ec33cb2-0ea9-40e2-808d-d4d41ae3a3de",
+      "topic_label": "Email Digests",
+      "topic_confidence": 0.77
+    },
+    {
+      "review_id": "351e8780-1e1b-4949-9e6d-c16389467b4a",
+      "topic_id": "a9c4e0ab-0f4b-46c8-9cbe-1ce1b579cb70",
+      "topic_label": "Dashboard UX",
+      "topic_confidence": 0.68
+    },
+    {
+      "review_id": "b4d74b6d-12b5-419a-9ca2-19de50f45d76",
+      "topic_id": "e0656e46-f279-4b2c-a643-fd5e29c52c0d",
+      "topic_label": "Integrations",
+      "topic_confidence": 0.81
+    },
+    {
+      "review_id": "d2d64d8b-0f0a-4e22-97cf-9f901bbe315d",
+      "topic_id": "e0656e46-f279-4b2c-a643-fd5e29c52c0d",
+      "topic_label": "Integrations",
+      "topic_confidence": 0.74
+    },
+    {
+      "review_id": "4e34ab9d-72f5-45db-8705-9f9e3d4b0c18",
+      "topic_id": "fa2b5abc-6fb8-45c2-8a5b-b56459c5ee8d",
+      "topic_label": "Support Response",
+      "topic_confidence": 0.64
+    },
+    {
+      "review_id": "29a01d24-3c7a-4af1-ad75-2145301b41af",
+      "topic_id": "fa2b5abc-6fb8-45c2-8a5b-b56459c5ee8d",
+      "topic_label": "Support Response",
+      "topic_confidence": 0.73
+    }
+  ],
+  "digests": [
+    {
+      "id": "5e5a9721-6d14-4fc2-8d56-c82cf61076df",
+      "timeframe_start": "2025-02-24T00:00:00Z",
+      "timeframe_end": "2025-03-02T23:59:59Z",
+      "generated_at": "2025-03-03T08:00:00Z",
+      "summary": {
+        "headline": "Sentiment up 8% driven by mobile launch polish."
+      },
+      "sentiment_snapshot": {
+        "positive": 5,
+        "neutral": 4,
+        "negative": 3,
+        "average_score": 0.21,
+        "review_count": 12
+      },
+      "topics_snapshot": [
+        {
+          "topic_label": "Dashboard UX",
+          "share": 0.33
+        },
+        {
+          "topic_label": "Email Digests",
+          "share": 0.25
+        }
+      ],
+      "created_at": "2025-03-03T08:00:00Z"
+    }
+  ]
+}
