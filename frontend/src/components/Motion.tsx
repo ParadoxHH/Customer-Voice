@@ -1,5 +1,5 @@
 import type { PropsWithChildren } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 
 interface MotionProps extends PropsWithChildren {
   delay?: number;
@@ -7,6 +7,12 @@ interface MotionProps extends PropsWithChildren {
 }
 
 export function FadeIn({ children, delay = 0, className }: MotionProps) {
+  const reduced = useReducedMotion();
+
+  if (reduced) {
+    return <div className={className}>{children}</div>;
+  }
+
   return (
     <motion.div
       className={className}
@@ -21,6 +27,12 @@ export function FadeIn({ children, delay = 0, className }: MotionProps) {
 }
 
 export function SlideUp({ children, delay = 0, className }: MotionProps) {
+  const reduced = useReducedMotion();
+
+  if (reduced) {
+    return <div className={className}>{children}</div>;
+  }
+
   return (
     <motion.div
       className={className}

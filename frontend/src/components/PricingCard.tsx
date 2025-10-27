@@ -36,34 +36,35 @@ export function PricingCard({
     <article
       {...props}
       className={clsx(
-        'glass gem-border flex h-full flex-col gap-6 rounded-[1.75rem] p-8',
-        popular && 'relative border-emerald/60 shadow-[0_28px_80px_rgba(0,168,107,0.28)]'
+        'surface-card hover-lift flex h-full flex-col gap-6 rounded-[1.75rem] p-8',
+        popular && 'border-emerald/40 shadow-card-soft',
+        className
       )}
     >
       <div className="space-y-3">
         <div className="flex items-center gap-3">
-          <span className="text-xs uppercase tracking-[0.3em] text-[color:var(--color-text-muted)]">
+          <span className="text-xs uppercase tracking-[0.3em] text-muted">
             {planLabels[tier]}
           </span>
           {popular ? (
-            <span className="pill pill--emerald text-[10px] uppercase tracking-[0.28em]">
+            <span className="rounded-full border border-emerald/40 bg-emerald/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-emerald">
               Most Picked
             </span>
           ) : null}
         </div>
-        <div className="text-4xl font-semibold text-white">
+        <div className="text-4xl font-semibold text-heading">
           {price}
-          <span className="ml-2 text-base font-medium text-[color:var(--color-text-muted)]">
+          <span className="ml-2 text-base font-medium text-muted">
             /month
           </span>
         </div>
-        <p className="text-sm text-[color:var(--color-text-muted)]">{description}</p>
+        <p className="text-sm text-muted">{description}</p>
       </div>
 
-      <ul className="flex flex-col gap-3 text-sm text-[color:var(--color-text-body)]">
+      <ul className="flex flex-col gap-3 text-sm text-body">
         {features.map((feature) => (
           <li key={feature} className="flex items-start gap-3">
-            <span className="mt-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald/15 text-emerald">
+            <span className="mt-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald/10 text-emerald">
               <Check className="h-3.5 w-3.5" aria-hidden />
             </span>
             <span>{feature}</span>

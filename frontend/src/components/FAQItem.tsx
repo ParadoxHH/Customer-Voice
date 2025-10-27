@@ -15,11 +15,7 @@ export function FAQItem({ question, answer, defaultOpen = false, className, ...p
   return (
     <div
       {...props}
-      className={clsx(
-        'glass gem-border rounded-3xl transition',
-        open ? 'border-emerald/60' : 'border-white/15',
-        className
-      )}
+      className={clsx('rounded-3xl border border-border bg-white shadow-card transition', open && 'border-emerald/40', className)}
     >
       <button
         type="button"
@@ -27,7 +23,7 @@ export function FAQItem({ question, answer, defaultOpen = false, className, ...p
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
       >
-        <span className="text-base font-semibold text-white sm:text-lg">{question}</span>
+        <span className="text-base font-semibold text-heading sm:text-lg">{question}</span>
         <ChevronDown
           className={clsx(
             'h-5 w-5 shrink-0 text-emerald transition-transform duration-200',
@@ -38,7 +34,7 @@ export function FAQItem({ question, answer, defaultOpen = false, className, ...p
       </button>
       <div
         className={clsx(
-          'overflow-hidden px-6 text-sm text-[color:var(--color-text-muted)] transition-[max-height,opacity] duration-200 ease-gem-ease',
+          'overflow-hidden px-6 text-sm text-muted transition-[max-height,opacity] duration-200 ease-gentle-ease',
           open ? 'max-h-72 pb-6 opacity-100' : 'max-h-0 opacity-0'
         )}
       >

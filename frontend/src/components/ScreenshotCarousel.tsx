@@ -65,26 +65,21 @@ export function ScreenshotCarousel({ items, interval = 6500 }: ScreenshotCarouse
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
     >
-      <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[rgba(11,15,20,0.92)] p-4">
+      <div className="relative overflow-hidden rounded-[2rem] border border-border bg-section p-4 shadow-card">
         <AnimatePresence mode="wait">
           <motion.figure
             key={activeItem.id}
-            className="relative overflow-hidden rounded-[1.5rem] bg-black/40"
+            className="relative overflow-hidden rounded-[1.5rem] bg-white shadow-card"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: prefersReducedMotion ? 0 : 0.5, ease: 'easeOut' }}
           >
-            <img
-              src={activeItem.src}
-              alt={activeItem.alt}
-              loading="lazy"
-              className="h-full w-full object-cover"
-            />
-            <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/0 p-6">
-              <div className="flex flex-col gap-2 text-left">
-                <p className="text-sm uppercase tracking-[0.32em] text-white/70">{activeItem.title}</p>
-                <p className="text-lg font-semibold text-white">{activeItem.description}</p>
+            <img src={activeItem.src} alt={activeItem.alt} loading="lazy" className="h-full w-full object-cover" />
+            <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-white via-white/60 to-white/0 p-6">
+              <div className="flex flex-col gap-2 text-left text-heading">
+                <p className="text-sm font-semibold uppercase tracking-[0.32em] text-muted">{activeItem.title}</p>
+                <p className="text-lg font-semibold">{activeItem.description}</p>
               </div>
             </figcaption>
           </motion.figure>
@@ -94,7 +89,7 @@ export function ScreenshotCarousel({ items, interval = 6500 }: ScreenshotCarouse
           <button
             type="button"
             onClick={handlePrevious}
-            className="ml-4 flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-white transition hover:bg-black/60 focus-visible:outline-none"
+            className="ml-4 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white text-heading transition hover:-translate-y-0.5 hover:shadow-card"
             aria-label="Previous screenshot"
           >
             <ChevronLeft className="h-5 w-5" aria-hidden />
@@ -104,7 +99,7 @@ export function ScreenshotCarousel({ items, interval = 6500 }: ScreenshotCarouse
           <button
             type="button"
             onClick={handleNext}
-            className="mr-4 flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-white transition hover:bg-black/60 focus-visible:outline-none"
+            className="mr-4 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white text-heading transition hover:-translate-y-0.5 hover:shadow-card"
             aria-label="Next screenshot"
           >
             <ChevronRight className="h-5 w-5" aria-hidden />
@@ -117,7 +112,10 @@ export function ScreenshotCarousel({ items, interval = 6500 }: ScreenshotCarouse
           <button
             key={item.id}
             type="button"
-            className={clsx('carousel-dot', itemIndex === index && 'ring-1 ring-emerald/60')}
+            className={clsx(
+              'h-3 w-10 rounded-full border border-border/70 bg-section transition hover:border-emerald/50',
+              itemIndex === index && 'border-emerald/60 bg-emerald/20'
+            )}
             onClick={() => setIndex(itemIndex)}
             aria-label={`Show screenshot ${itemIndex + 1}: ${item.title}`}
             data-active={itemIndex === index}

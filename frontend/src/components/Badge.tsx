@@ -4,25 +4,19 @@ import { clsx } from 'clsx';
 type BadgeTone = 'muted' | 'emerald' | 'sapphire' | 'ruby';
 
 const toneMap: Record<BadgeTone, string> = {
-  muted: 'border-white/15 text-[color:var(--color-text-muted)]',
-  emerald: 'border-emerald/60 text-emerald/80',
-  sapphire: 'border-sapphire/60 text-sapphire/70',
-  ruby: 'border-ruby/60 text-ruby/70'
+  muted: 'border-border bg-white text-muted',
+  emerald: 'border-emerald/40 bg-emerald/10 text-emerald',
+  sapphire: 'border-sapphire/40 bg-sapphire/10 text-sapphire',
+  ruby: 'border-ruby/40 bg-ruby/10 text-ruby'
 };
+
+const baseClasses =
+  'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em]';
 
 export type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
   tone?: BadgeTone;
 };
 
 export function Badge({ className, tone = 'muted', ...props }: BadgeProps) {
-  return (
-    <span
-      {...props}
-      className={clsx(
-        'badge uppercase tracking-[0.28em] text-[10px] font-semibold',
-        toneMap[tone],
-        className
-      )}
-    />
-  );
+  return <span {...props} className={clsx(baseClasses, toneMap[tone], className)} />;
 }

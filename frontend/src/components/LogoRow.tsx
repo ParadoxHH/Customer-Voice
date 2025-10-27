@@ -17,7 +17,7 @@ export function LogoRow({ className }: LogoRowProps) {
   return (
     <div
       className={clsx(
-        'glass gem-border flex flex-wrap items-center justify-center gap-8 rounded-3xl px-6 py-5 text-xs uppercase tracking-[0.4em] text-white/60 sm:gap-10 sm:px-8 sm:text-sm',
+        'flex flex-wrap items-center justify-center gap-8 rounded-3xl border border-border bg-white px-6 py-5 text-xs uppercase tracking-[0.4em] text-muted shadow-card sm:gap-10 sm:px-8 sm:text-sm',
         className
       )}
     >

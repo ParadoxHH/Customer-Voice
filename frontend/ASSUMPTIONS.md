@@ -1,6 +1,6 @@
 # Assumptions & Notes
 
-- Placeholder screenshot and avatar assets are generated as inline SVG data URIs to avoid bundling large binaries while still delivering 35 unique visuals.
-- Testimonials, stats, and copy are fictional but grounded in plausible product outcomes to satisfy the conversational tone.
-- Existing frontend dependencies that are no longer required (e.g., `@tanstack/react-query`) remain in `package.json` so the lockfile stays consistent; remove them in a follow-up if you prefer a lean dependency tree.
-- The `/app` route is an illustrative shell only—navigation buttons are non-functional placeholders until real routes are wired up.
+- SVG screenshots in `src/assets/` are lightweight placeholders that mirror the layout of the real dashboard. Replace them with production captures before launch.
+- The `/app` shell stores connected sources in component state and sends a minimal payload to `POST /ingest`. Swap in the real API contract once backend endpoints are available.
+- `VITE_DIGEST_TOKEN` is optional; digest instructions surface in the UI without calling the endpoint when the token is unset.
+- Existing dependencies that are not yet used (e.g., React Query) remain in `package.json` to avoid disrupting the shared lockfile. Remove them when the data layer lands.

@@ -1,38 +1,121 @@
+import { FormEvent, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { clsx } from 'clsx';
 import {
   LayoutDashboard,
   Plug,
   Upload,
+  BarChart3,
   Sparkles,
   Settings,
-  BarChart3,
-  ShieldCheck
+  ShieldCheck,
+  Database
 } from 'lucide-react';
+import { Container } from '../components/Container';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
-import { Container } from '../components/Container';
+import { Pill } from '../components/Pill';
+import { GradientUnderline } from '../components/GradientUnderline';
 
-const sideNavItems = [
+type SourceFormState = {
+  name: string;
+  platform: string;
+  identifier: string;
+};
+
+const initialForm: SourceFormState = {
+  name: '',
+  platform: '',
+  identifier: ''
+};
+
+const navigation = [
   { label: 'Overview', icon: <LayoutDashboard className="h-4 w-4" aria-hidden />, active: true },
   { label: 'Sources', icon: <Plug className="h-4 w-4" aria-hidden />, active: false },
-  { label: 'Collections', icon: <Upload className="h-4 w-4" aria-hidden />, active: false },
+  { label: 'Imports', icon: <Upload className="h-4 w-4" aria-hidden />, active: false },
   { label: 'Insights', icon: <BarChart3 className="h-4 w-4" aria-hidden />, active: false },
   { label: 'Automation', icon: <Sparkles className="h-4 w-4" aria-hidden />, active: false },
   { label: 'Settings', icon: <Settings className="h-4 w-4" aria-hidden />, active: false }
 ] as const;
 
+type ImportStatus = 'idle' | 'loading' | 'success' | 'error';
+
 export default function AppShell() {
+  const [sources, setSources] = useState<SourceFormState[]>([]);
+  const [formState, setFormState] = useState<SourceFormState>(initialForm);
+  const [importStatus, setImportStatus] = useState<ImportStatus>('idle');
+  const [importMessage, setImportMessage] = useState<string>('');
+
+  const apiUrl = import.meta.env.VITE_API_URL;
+  const digestToken = import.meta.env.VITE_DIGEST_TOKEN;
+
+  const formValid = useMemo(
+    () => formState.name.trim().length > 0 && formState.platform.trim().length > 0 && formState.identifier.trim().length > 0,
+    [formState.name, formState.platform, formState.identifier]
+  );
+
+  const handleSubmitSource = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!formValid) {
+      return;
+    }
+    setSources((prev) => [...prev, formState]);
+    setFormState(initialForm);
+  };
+
+  const handleImportSampleData = async () => {
+    if (!apiUrl) {
+      setImportStatus('error');
+      setImportMessage('Set VITE_API_URL in your environment to import sample data.');
+      return;
+    }
+
+    setImportStatus('loading');
+    setImportMessage('');
+
+    try {
+      const response = await fetch(`${apiUrl.replace(/\/$/, '')}/ingest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source: 'demo-sample',
+          reviews: [
+            {
+              source_review_id: 'demo-sample-1',
+              platform: 'sample',
+              rating: 5,
+              title: 'Demo sample review',
+              body: 'Customer Voice makes it easy to find praise and complaints.',
+              author: 'Sample User',
+              captured_at: new Date().toISOString()
+            }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Import failed with status ${response.status}`);
+      }
+
+      setImportStatus('success');
+      setImportMessage('Sample data queued. Refresh insights shortly to explore the dashboard.');
+    } catch (error) {
+      setImportStatus('error');
+      setImportMessage(error instanceof Error ? error.message : 'Import failed. Check your API URL and try again.');
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[var(--color-background)] text-[color:var(--color-text-body)]">
-      <header className="sticky top-0 z-30 border-b border-white/10 bg-[rgba(11,15,20,0.85)] backdrop-blur-2xl">
+    <div className="min-h-screen bg-section text-body">
+      <header className="border-b border-border bg-white">
         <Container className="flex h-20 items-center justify-between gap-6">
-          <Link to="/" className="flex items-center gap-3 text-white focus:outline-none">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gem-gradient">
+          <Link to="/" className="flex items-center gap-3 focus:outline-none">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gem-gradient text-white shadow-card">
               <ShieldCheck className="h-5 w-5" aria-hidden />
             </span>
             <div className="leading-tight">
-              <p className="text-xs uppercase tracking-[0.38em] text-white/60">Customer Voice</p>
-              <p className="text-lg font-semibold text-white">App Shell</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.38em] text-muted">Customer Voice</p>
+              <p className="text-lg font-semibold text-heading">App Shell</p>
             </div>
           </Link>
           <div className="flex items-center gap-3">
@@ -44,75 +127,188 @@ export default function AppShell() {
         </Container>
       </header>
 
-      <div className="mx-auto flex w-full max-w-[110rem] gap-6 px-4 py-10 sm:px-6 lg:px-8">
-        <aside className="hidden w-64 flex-shrink-0 flex-col gap-3 md:flex">
-          <div className="glass gem-border rounded-3xl p-4">
-            <p className="text-xs uppercase tracking-[0.32em] text-white/60">Navigation</p>
+      <Container size="wide" className="flex flex-col gap-8 py-10 lg:flex-row">
+        <aside className="w-full max-w-xs space-y-4 lg:w-64 lg:flex-shrink-0">
+          <div className="rounded-2xl border border-border bg-white p-4 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted">Navigation</p>
           </div>
           <nav className="space-y-2">
-            {sideNavItems.map((item) => (
+            {navigation.map((item) => (
               <button
-                type="button"
                 key={item.label}
-                className={[
-                  'flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm transition',
-                  item.active
-                    ? 'border-transparent bg-gem-gradient text-white shadow-[0_18px_45px_rgba(15,82,186,0.25)]'
-                    : 'border-white/10 bg-white/5 text-white/70 hover:border-white/30 hover:text-white'
-                ].join(' ')}
+                type="button"
+                className="group flex w-full items-center gap-3 rounded-2xl border border-transparent bg-white px-4 py-3 text-sm font-medium text-muted shadow-sm transition hover:border-border hover:text-heading"
               >
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-black/30">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-section text-heading shadow-sm">
                   {item.icon}
                 </span>
-                <span>{item.label}</span>
+                <span className="flex-1 text-left text-heading">{item.label}</span>
+                {item.active ? (
+                  <span className="h-1 w-8 rounded-full bg-gem-gradient transition group-hover:w-10" aria-hidden />
+                ) : null}
               </button>
             ))}
           </nav>
         </aside>
 
         <main className="flex min-h-[70vh] flex-1 flex-col gap-8">
-          <section className="glass gem-border rounded-[2.5rem] p-8">
+          <section className="rounded-[2.5rem] border border-border bg-white p-8 shadow-card-soft">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-white/60">Workspace Preview</p>
-                <h1 className="text-3xl font-semibold text-white">Customer Voice Dashboard</h1>
-                <p className="mt-2 max-w-2xl text-sm text-[color:var(--color-text-muted)]">
-                  This placeholder shell shows how the live product chrome hugs your gem gradients.
-                  Wire up real routes when you are ready to mount the production dashboard.
+              <div className="space-y-3">
+                <Pill tone="gem">Workspace Preview</Pill>
+                <h1 className="text-3xl font-semibold text-heading">Customer Voice Dashboard</h1>
+                <p className="max-w-3xl text-sm text-muted sm:text-base">
+                  This shell demonstrates the product chrome that will wrap the live dashboard. Add sources, try the
+                  sample data importer, and wire buttons to backend endpoints when your API is ready.
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <Button variant="secondary">Invite teammate</Button>
-                <Button variant="primary">Open builder</Button>
+                <Button variant="secondary">Invite Teammate</Button>
+                <Button variant="primary">Open Builder</Button>
               </div>
             </div>
           </section>
 
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-6 lg:grid-cols-2">
             <Card
               title="Connect Sources"
-              description="Add App Store, G2, Shopify, surveys, and NPS feeds. Each source inherits your gem-themed tags and privacy rules."
-              actions={<Button variant="primary">Add source</Button>}
+              description="Add a review or survey channel so the dashboard knows where to pull feedback."
+              icon={<Plug className="h-6 w-6" aria-hidden />}
             >
-              <p>Preview cards show how your future integrations will appear.</p>
+              <form className="flex flex-col gap-4" onSubmit={handleSubmitSource}>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="flex flex-col gap-1 text-sm">
+                    <span className="font-semibold text-heading">Source name</span>
+                    <input
+                      type="text"
+                      value={formState.name}
+                      onChange={(event) => setFormState((prev) => ({ ...prev, name: event.target.value }))}
+                      className="rounded-lg border border-border px-3 py-2 text-sm text-body focus:border-emerald focus:outline-none focus:ring-2 focus:ring-emerald/40"
+                      placeholder="Downtown Location"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1 text-sm">
+                    <span className="font-semibold text-heading">Platform</span>
+                    <input
+                      type="text"
+                      value={formState.platform}
+                      onChange={(event) => setFormState((prev) => ({ ...prev, platform: event.target.value }))}
+                      className="rounded-lg border border-border px-3 py-2 text-sm text-body focus:border-emerald focus:outline-none focus:ring-2 focus:ring-emerald/40"
+                      placeholder="Google, Yelp, App Store..."
+                    />
+                  </label>
+                </div>
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="font-semibold text-heading">Source identifier</span>
+                  <input
+                    type="text"
+                    value={formState.identifier}
+                    onChange={(event) => setFormState((prev) => ({ ...prev, identifier: event.target.value }))}
+                    className="rounded-lg border border-border px-3 py-2 text-sm text-body focus:border-emerald focus:outline-none focus:ring-2 focus:ring-emerald/40"
+                    placeholder="Place ID, Business URL, survey slug..."
+                  />
+                </label>
+                <div className="flex items-center justify-between gap-4">
+                  <Button type="submit" variant="primary" disabled={!formValid}>
+                    Save source
+                  </Button>
+                  <span className="text-xs text-muted">Sources sync automatically once connected.</span>
+                </div>
+              </form>
+              {sources.length > 0 ? (
+                <div className="mt-6 space-y-3">
+                  <GradientUnderline className="text-xs font-semibold uppercase tracking-[0.3em] text-muted">
+                    Connected sources
+                  </GradientUnderline>
+                  <ul className="space-y-2 text-sm text-heading">
+                    {sources.map((source) => (
+                      <li
+                        key={`${source.platform}-${source.identifier}`}
+                        className="flex items-center justify-between rounded-xl border border-border bg-section px-4 py-3"
+                      >
+                        <div>
+                          <p className="font-semibold">{source.name}</p>
+                          <p className="text-xs text-muted">
+                            {source.platform} &middot; {source.identifier}
+                          </p>
+                        </div>
+                        <span className="inline-flex items-center gap-1 text-xs text-emerald">
+                          <Database className="h-3.5 w-3.5" aria-hidden />
+                          Ready
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
             </Card>
+
             <Card
               title="Import Sample Data"
-              description="Load provided sample feedback to explore sentiment, clustering, and digests without connecting live systems."
-              actions={<Button variant="secondary">Run importer</Button>}
+              description="Load a demo dataset to preview insights before you connect live sources."
+              icon={<Upload className="h-6 w-6" aria-hidden />}
+              actions={
+                <Button type="button" variant="primary" onClick={handleImportSampleData} disabled={importStatus === 'loading'}>
+                  {importStatus === 'loading' ? 'Importing…' : 'Import sample data'}
+                </Button>
+              }
             >
-              <p>Use this to rehearse flows with stakeholders before switching on production data.</p>
+              <p className="text-sm text-muted">
+                Sample data helps you practise stakeholder walkthroughs, test digest emails, and confirm the layout on every device.
+              </p>
+              {importStatus !== 'idle' ? (
+                <p
+                  className={clsx(
+                    'rounded-xl border px-4 py-3 text-sm',
+                    importStatus === 'success'
+                      ? 'border-emerald/40 bg-emerald/10 text-emerald'
+                      : importStatus === 'error'
+                        ? 'border-ruby/40 bg-ruby/10 text-ruby'
+                        : 'border-border bg-section text-muted'
+                  )}
+                >
+                  {importMessage || (importStatus === 'loading' ? 'Sending request to /ingest…' : null)}
+                </p>
+              ) : null}
+              <p className="text-xs text-muted">
+                API base: {apiUrl ? <code className="rounded bg-section px-2 py-1">{apiUrl}</code> : 'Set VITE_API_URL to enable imports.'}
+              </p>
             </Card>
+
             <Card
               title="View Insights"
-              description="Glass panels render key stats, digests, and trend lines so your team can align in minutes."
-              actions={<Button variant="ghost">Browse playbook</Button>}
+              description="Charts and digests unlock as soon as data lands. Keep this placeholder until the production dashboard mounts."
+              icon={<BarChart3 className="h-6 w-6" aria-hidden />}
+              actions={
+                <Button type="button" variant="secondary" disabled>
+                  Waiting for data
+                </Button>
+              }
             >
-              <p>Swap these placeholders with widgets from your dashboard as you wire up routes.</p>
+              <p className="text-sm text-muted">
+                Add widgets such as sentiment trends, topic clusters, and digest previews once your React routes are wired to live data sources.
+              </p>
+            </Card>
+
+            <Card
+              title="Run Digest (Optional)"
+              description="Trigger the digest endpoint to preview the JSON payload that powers executive summaries."
+              icon={<Sparkles className="h-6 w-6" aria-hidden />}
+            >
+              <p className="text-sm text-muted">
+                Use the <code className="rounded bg-section px-2 py-1">POST /digest/run</code> endpoint with{' '}
+                <code className="rounded bg-section px-2 py-1">Authorization: Bearer {'<token>'}</code>. Set{' '}
+                <code className="rounded bg-section px-2 py-1">VITE_DIGEST_TOKEN</code> to test from the browser.
+              </p>
+              <p className="text-xs text-muted">
+                {digestToken
+                  ? 'A digest token is configured. Add UI logic here to show the returned summary.'
+                  : 'Add VITE_DIGEST_TOKEN to your environment when you are ready to trigger real digests.'}
+              </p>
             </Card>
           </div>
         </main>
-      </div>
+      </Container>
     </div>
   );
 }

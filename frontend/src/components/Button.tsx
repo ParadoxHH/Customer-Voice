@@ -14,15 +14,15 @@ type ButtonProps<T extends ElementType> = {
 } & ComponentPropsWithoutRef<T>;
 
 const baseClasses =
-  'inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-colors duration-200 ease-gem-ease focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60';
+  'inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-transform duration-200 ease-gentle-ease focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60';
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    'bg-[length:200%_200%] text-white shadow-[0_20px_45px_rgba(15,82,186,0.25)] focus-visible:ring-2 focus-visible:ring-emerald/90 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent',
+    'bg-gem-gradient bg-[length:200%_200%] text-white shadow-card hover:-translate-y-0.5 hover:shadow-card-soft',
   secondary:
-    'glass text-[color:var(--color-text-body)] hover:text-white focus-visible:ring-2 focus-visible:ring-emerald/80 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent',
+    'border border-border bg-white text-heading shadow-sm hover:-translate-y-0.5 hover:shadow-card',
   ghost:
-    'text-[color:var(--color-text-muted)] hover:text-white focus-visible:ring-2 focus-visible:ring-emerald/60 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent'
+    'text-heading border border-transparent hover:border-border hover:bg-section hover:-translate-y-0.5'
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -44,16 +44,7 @@ export function Button<T extends ElementType = 'button'>({
   const Component = (as ?? 'button') as ElementType;
 
   return (
-    <Component
-      className={clsx(
-        baseClasses,
-        sizeClasses[size],
-        variantClasses[variant],
-        variant === 'primary' ? 'bg-gem-gradient hover:brightness-[1.08]' : '',
-        className
-      )}
-      {...rest}
-    >
+    <Component className={clsx(baseClasses, sizeClasses[size], variantClasses[variant], className)} {...rest}>
       {startIcon ? <span aria-hidden className="-ml-1 flex items-center">{startIcon}</span> : null}
       {children}
       {endIcon ? <span aria-hidden className="-mr-1 flex items-center">{endIcon}</span> : null}

@@ -42,12 +42,12 @@ export function Section({
           <header className={clsx('flex w-full flex-col gap-4', alignClass)}>
             {eyebrow ? <Badge tone="emerald">{eyebrow}</Badge> : null}
             {title ? (
-              <h2 className="gem-text text-3xl font-semibold leading-tight tracking-tight sm:text-4xl lg:text-5xl">
+              <h2 className="text-3xl font-bold leading-tight tracking-tight text-heading sm:text-4xl lg:text-5xl">
                 {title}
               </h2>
             ) : null}
             {description ? (
-              <p className="max-w-2xl text-base text-[color:var(--color-text-muted)] sm:text-lg">
+              <p className="max-w-2xl text-base text-muted sm:text-lg">
                 {description}
               </p>
             ) : null}

@@ -22,39 +22,30 @@ export function Card({
   return (
     <article
       {...props}
-      className={clsx(
-        'gem-border glass relative flex h-full flex-col gap-5 rounded-3xl p-6 sm:p-7',
-        className
-      )}
+      className={clsx('surface-card hover-lift flex h-full flex-col gap-5 rounded-3xl p-6 sm:p-8', className)}
     >
       {(eyebrow || title || icon || actions) && (
-        <header className="flex flex-col gap-3">
+        <header className="flex flex-col gap-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
               {icon ? (
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/8 text-sky-200 shadow-[0_18px_40px_rgba(15,82,186,0.18)]">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-section text-sapphire shadow-card">
                   {icon}
                 </span>
               ) : null}
               <div className="space-y-1.5">
                 {eyebrow ? (
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[color:var(--color-text-muted)]">
-                    {eyebrow}
-                  </p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted">{eyebrow}</p>
                 ) : null}
-                {title ? (
-                  <h3 className="text-xl font-semibold text-white">{title}</h3>
-                ) : null}
+                {title ? <h3 className="text-xl font-semibold text-heading">{title}</h3> : null}
               </div>
             </div>
             {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
           </div>
-          {description ? (
-            <p className="text-sm text-[color:var(--color-text-muted)]">{description}</p>
-          ) : null}
+          {description ? <p className="text-sm text-muted">{description}</p> : null}
         </header>
       )}
-      {children ? <div className="flex flex-col gap-4 text-sm text-[color:var(--color-text-muted)]">{children}</div> : null}
+      {children ? <div className="flex flex-col gap-4 text-sm text-muted">{children}</div> : null}
     </article>
   );
 }
