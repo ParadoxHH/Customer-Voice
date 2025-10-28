@@ -4,7 +4,7 @@ Flask + SQLAlchemy service that powers the Customer Voice Dashboard. Use this gu
 
 ## Prerequisites
 - Python 3.11+
-- PostgreSQL (local or Neon connection string)
+- PostgreSQL (local instance or Neon connection string)
 - Node 18+ for the frontend (separate project)
 - `psycopg[binary]` dependencies handled by `pip`
 
@@ -16,7 +16,7 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Update `.env` with your Neon `DATABASE_URL`, a local SPA URL (`ALLOWED_ORIGIN=http://localhost:5173`), and a `TOKEN_DIGEST_RUN` for protected digests.
+Update `.env` with your Neon `DATABASE_URL`, a local SPA URL (`ALLOWED_ORIGIN=http://localhost:5173`), an `AUTH_TOKEN_SECRET` for signing login tokens, and a `TOKEN_DIGEST_RUN` for protected digests. Optionally add `ADMIN_INVITE_CODE` if admin access should require an invite code.
 
 Run the API:
 ```bash
@@ -52,12 +52,13 @@ Use the provided factory methods to build fixtures; tests rely on SQLite, so Pos
 2. Render env vars:
    - `DATABASE_URL` (Neon connection string)
    - `ALLOWED_ORIGIN` (Cloudflare Pages URL)
+   - `AUTH_TOKEN_SECRET` (32+ character string for issuing auth tokens)
    - `TOKEN_DIGEST_RUN` (must match GitHub Actions secret)
-   - Optional: `OPENAI_API_KEY`, `RESEND_API_KEY`
+   - Optional: `ADMIN_INVITE_CODE`, `AUTH_TOKEN_TTL_SECONDS`, `AUTH_PASSWORD_MIN_LENGTH`, `OPENAI_API_KEY`, `RESEND_API_KEY`
 3. Neon: create a branch/database per environment; enable pooling for serverless usage.
 4. GitHub Actions:
-   - `RENDER_API_URL` – https://<service>.onrender.com
-   - `DIGEST_TOKEN` – same as `TOKEN_DIGEST_RUN`
+   - `RENDER_API_URL` — `https://<service>.onrender.com`
+   - `DIGEST_TOKEN` — same as `TOKEN_DIGEST_RUN`
 5. After deployment, hit `/health` to confirm the service is live.
 
 ## Running Scheduled Digest Manually

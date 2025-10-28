@@ -1,9 +1,10 @@
 """Route blueprints for the Customer Voice Dashboard API."""
 
-from . import analyze, competitors, digest, ingest, insights
+from . import analyze, auth, competitors, digest, ingest, insights
 
 __all__ = [
     "analyze",
+    "auth",
     "competitors",
     "digest",
     "ingest",

@@ -190,3 +190,32 @@ export interface RateLimitError extends ErrorResponse {
   retry_after_seconds: number;
   guidance: string;
 }
+
+export interface User {
+  user_id: string;
+  email: string;
+  display_name?: string | null;
+  role: 'admin' | 'analyst';
+  is_admin: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  last_login_at?: string | null;
+}
+
+export interface AuthRegisterRequest {
+  email: string;
+  password: string;
+  display_name?: string | null;
+  admin_invite?: string | null;
+}
+
+export interface AuthLoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface AuthSuccessResponse {
+  user: User;
+  token: string;
+}

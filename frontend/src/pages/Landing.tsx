@@ -31,6 +31,7 @@ import { FadeIn, SlideUp } from '../components/Motion';
 import { LogoRow } from '../components/LogoRow';
 import { GradientUnderline } from '../components/GradientUnderline';
 import { impactStats, screenshotItems, testimonials, faqItems } from './landingData';
+import { useAuth } from '../lib/auth';
 
 const navLinks = [
   { label: 'Features', href: '#features' },
@@ -106,6 +107,10 @@ const pricingPlans = [
 ] as const;
 
 export default function Landing() {
+  const { user } = useAuth();
+  const primaryCtaPath = user ? '/app' : '/register';
+  const primaryCtaLabel = user ? 'Go to your dashboard' : 'Create your account';
+
   const [testimonialIndex, setTestimonialIndex] = useState(0);
   const prefersReducedMotion = useReducedMotion();
 
@@ -148,8 +153,8 @@ export default function Landing() {
                   </p>
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <Button as={Link} to="/app" size="lg" endIcon={<ArrowRight className="h-5 w-5" aria-hidden />}>
-                    Try Live Demo
+                  <Button as={Link} to={primaryCtaPath} size="lg" endIcon={<ArrowRight className="h-5 w-5" aria-hidden />}>
+                    {primaryCtaLabel}
                   </Button>
                   <Button as="a" href="#pricing" variant="secondary" size="lg">
                     See Pricing
@@ -292,7 +297,7 @@ export default function Landing() {
           id="pricing"
           eyebrow="Plans & pricing"
           title="Choose the plan that fits your review volume"
-          description="Upgrade as your feedback footprint grows. Every plan includes the live demo workspace, importable sample data, and onboarding checklists."
+          description="Upgrade as your feedback footprint grows. Every plan includes a guided onboarding workspace, importable sample data, and collaborative checklists."
         >
           <Grid variant="triple" gap="lg">
             {pricingPlans.map((plan) => (
@@ -319,15 +324,15 @@ export default function Landing() {
           alignment="center"
           className="pb-24"
           eyebrow="Ready to listen smarter?"
-          title="Open the live demo and explore the dashboard"
-          description="Import sample reviews, trigger a digest, and preview competitor benchmarks in minutes."
+          title="Create an account to explore the dashboard"
+          description="Start centralising feedback, sharing digests, and aligning every stakeholder around what customers are saying."
         >
           <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 rounded-[2.5rem] border border-border bg-section p-10 text-center shadow-card-soft">
             <p className="text-lg text-muted">
               Customer Voice Dashboard is built for fast-moving teams who want every decision backed by customer proof.
             </p>
-            <Button as={Link} to="/app" size="lg" endIcon={<ArrowRight className="h-5 w-5" aria-hidden />}>
-              Open the Live Demo
+            <Button as={Link} to={primaryCtaPath} size="lg" endIcon={<ArrowRight className="h-5 w-5" aria-hidden />}>
+              {primaryCtaLabel}
             </Button>
           </div>
         </Section>

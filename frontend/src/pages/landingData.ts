@@ -95,9 +95,9 @@ export const faqItems: FAQItem[] = [
       'Start with Google, Yelp, App Store, Play Store, Trustpilot, and CSV uploads. Additional sources are available on Business and Pro plans.'
   },
   {
-    question: 'Do I need developers to get value?',
+    question: 'How quickly can we get started?',
     answer:
-      'No engineering work is required. Connect your sources, import the provided sample data, and tailor alerts from the browser.'
+      'Most teams connect sources and publish their first digest in under an hour thanks to guided onboarding and sample datasets.'
   },
   {
     question: 'Can I invite my agency or franchise partners?',

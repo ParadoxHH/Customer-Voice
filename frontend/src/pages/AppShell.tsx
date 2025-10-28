@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { clsx } from 'clsx';
 import {
   LayoutDashboard,
@@ -17,6 +17,7 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { Pill } from '../components/Pill';
 import { GradientUnderline } from '../components/GradientUnderline';
+import { useAuth } from '../lib/auth';
 
 type SourceFormState = {
   name: string;
@@ -41,12 +42,14 @@ type SectionConfig = {
   ref: React.MutableRefObject<HTMLDivElement | null>;
 };
 
-export default function AppShell() {
+export default function AdminPortal() {
   const [sources, setSources] = useState<SourceFormState[]>([]);
   const [formState, setFormState] = useState<SourceFormState>(initialForm);
   const [importStatus, setImportStatus] = useState<ImportStatus>('idle');
   const [importMessage, setImportMessage] = useState<string>('');
   const [activeSection, setActiveSection] = useState<SectionId>('overview');
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
   const overviewRef = useRef<HTMLDivElement>(null);
   const sourcesRef = useRef<HTMLDivElement>(null);
@@ -186,14 +189,23 @@ export default function AppShell() {
             </span>
             <div className="leading-tight">
               <p className="text-xs font-semibold uppercase tracking-[0.38em] text-muted">Customer Voice</p>
-              <p className="text-lg font-semibold text-heading">App Shell</p>
+              <p className="text-lg font-semibold text-heading">Admin Portal</p>
             </div>
           </Link>
           <div className="flex items-center gap-3">
-            <Button as={Link} to="/" variant="ghost">
-              Marketing Site
+            <Button as={Link} to="/app" variant="ghost">
+              User Dashboard
             </Button>
-            <Button variant="primary">Publish Workspace</Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={() => {
+                logout();
+                navigate('/');
+              }}
+            >
+              Log out
+            </Button>
           </div>
         </Container>
       </header>

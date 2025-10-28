@@ -24,6 +24,7 @@ def app(monkeypatch, tmp_path):
     monkeypatch.setenv("DATABASE_URL", database_url)
     monkeypatch.setenv("ALLOWED_ORIGIN", "http://localhost")
     monkeypatch.setenv("TOKEN_DIGEST_RUN", "test-token")
+    monkeypatch.setenv("AUTH_TOKEN_SECRET", "test-secret-key")
 
     engine = init_engine(database_url)
     Base.metadata.create_all(bind=engine)

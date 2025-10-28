@@ -12,6 +12,7 @@ from werkzeug.exceptions import HTTPException
 
 from .models import init_app as init_models
 from .routes.analyze import bp as analyze_bp
+from .routes.auth import bp as auth_bp
 from .routes.competitors import bp as competitors_bp
 from .routes.digest import bp as digest_bp
 from .routes.ingest import bp as ingest_bp
@@ -31,9 +32,17 @@ def create_app() -> Flask:
 
     app.config["DATABASE_URL"] = database_url
     app.config["ALLOWED_ORIGIN"] = allowed_origin
+    auth_secret = os.environ.get("AUTH_TOKEN_SECRET")
+    if not auth_secret:
+        raise RuntimeError("AUTH_TOKEN_SECRET environment variable must be set.")
+
     app.config["TOKEN_DIGEST_RUN"] = os.environ.get("TOKEN_DIGEST_RUN", "")
     app.config["OPENAI_API_KEY"] = os.environ.get("OPENAI_API_KEY")
     app.config["RESEND_API_KEY"] = os.environ.get("RESEND_API_KEY")
+    app.config["AUTH_TOKEN_SECRET"] = auth_secret
+    app.config["AUTH_TOKEN_TTL_SECONDS"] = int(os.environ.get("AUTH_TOKEN_TTL_SECONDS", "604800"))
+    app.config["AUTH_PASSWORD_MIN_LENGTH"] = int(os.environ.get("AUTH_PASSWORD_MIN_LENGTH", "8"))
+    app.config["ADMIN_INVITE_CODE"] = os.environ.get("ADMIN_INVITE_CODE", "")
 
     init_models(app)
 
@@ -55,6 +64,7 @@ def create_app() -> Flask:
 
 def register_blueprints(app: Flask) -> None:
     """Attach route blueprints to the Flask app."""
+    app.register_blueprint(auth_bp)
     app.register_blueprint(ingest_bp)
     app.register_blueprint(analyze_bp)
     app.register_blueprint(insights_bp)

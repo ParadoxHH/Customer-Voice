@@ -1,10 +1,11 @@
 import { useId, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { clsx } from 'clsx';
 import logo from '../assets/logo.svg';
 import { Button } from './Button';
 import { Container } from './Container';
+import { useAuth } from '../lib/auth';
 
 export interface NavLinkItem {
   label: string;
@@ -18,6 +19,14 @@ export interface NavBarProps {
 export function NavBar({ links }: NavBarProps) {
   const [open, setOpen] = useState(false);
   const menuId = useId();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    setOpen(false);
+    navigate('/');
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-white/90 backdrop-blur">
@@ -45,12 +54,30 @@ export function NavBar({ links }: NavBarProps) {
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Button as={Link} to="/app" variant="ghost">
-            Open App
-          </Button>
-          <Button as="a" href="#pricing" variant="primary" size="md">
-            See Pricing
-          </Button>
+          {user ? (
+            <>
+              <Button as={Link} to="/app" variant="ghost">
+                Dashboard
+              </Button>
+              {user.is_admin ? (
+                <Button as={Link} to="/admin" variant="ghost">
+                  Admin
+                </Button>
+              ) : null}
+              <Button type="button" variant="primary" size="md" onClick={handleLogout}>
+                Log out
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button as={Link} to="/login" variant="ghost">
+                Log in
+              </Button>
+              <Button as={Link} to="/register" variant="primary" size="md">
+                Create account
+              </Button>
+            </>
+          )}
         </div>
 
         <button
@@ -83,9 +110,30 @@ export function NavBar({ links }: NavBarProps) {
               {link.label}
             </a>
           ))}
-          <Button as={Link} to="/app" variant="primary" className="w-full">
-            Try Live Demo
-          </Button>
+          {user ? (
+            <>
+              <Button as={Link} to="/app" variant="ghost" className="w-full" onClick={() => setOpen(false)}>
+                Dashboard
+              </Button>
+              {user.is_admin ? (
+                <Button as={Link} to="/admin" variant="ghost" className="w-full" onClick={() => setOpen(false)}>
+                  Admin
+                </Button>
+              ) : null}
+              <Button type="button" variant="primary" className="w-full" onClick={handleLogout}>
+                Log out
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button as={Link} to="/login" variant="ghost" className="w-full" onClick={() => setOpen(false)}>
+                Log in
+              </Button>
+              <Button as={Link} to="/register" variant="primary" className="w-full" onClick={() => setOpen(false)}>
+                Create account
+              </Button>
+            </>
+          )}
         </nav>
       </div>
     </header>

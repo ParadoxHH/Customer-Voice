@@ -1,6 +1,7 @@
 # Assumptions & Notes
 
-- SVG screenshots in `src/assets/` are lightweight placeholders that mirror the layout of the real dashboard. Replace them with production captures before launch.
-- The `/app` shell stores connected sources in component state and sends a minimal payload to `POST /ingest`. Swap in the real API contract once backend endpoints are available.
-- `VITE_DIGEST_TOKEN` is optional; digest instructions surface in the UI without calling the endpoint when the token is unset.
-- Existing dependencies that are not yet used (e.g., React Query) remain in `package.json` to avoid disrupting the shared lockfile. Remove them when the data layer lands.
+- Hero and dashboard SVGs in `src/assets/` remain illustrative; replace with production captures during launch hardening.
+- The customer dashboard (`/app`) presents sample metrics and recent feedback placeholders until real analytics endpoints land.
+- Admin portal tools manage connector setup, sample data import, and digest triggers locally; wire them to backend endpoints as they become available.
+- Authentication relies on the Flask `/auth/*` endpoints. The first registered account (or anyone with `ADMIN_INVITE_CODE`) becomes an admin.
+- `VITE_DIGEST_TOKEN` is optional; without it the admin portal still renders guidance but skips API calls for digests.
