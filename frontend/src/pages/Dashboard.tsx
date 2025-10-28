@@ -74,7 +74,7 @@ export default function Dashboard() {
       <main>
         <Container className="py-12">
           <section className="rounded-3xl border border-border bg-white p-10 shadow-card-soft">
-            <Pill icon={<Sparkles className="h-4 w-4" aria-hidden />} variant="emerald">
+            <Pill icon={<Sparkles className="h-4 w-4" aria-hidden />} tone="emerald">
               Welcome back
             </Pill>
             <h2 className="mt-6 text-3xl font-semibold text-heading">
@@ -112,7 +112,7 @@ export default function Dashboard() {
           <section className="mt-12 rounded-3xl border border-border bg-white p-10 shadow-card-soft">
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
               <div>
-                <Pill icon={<MessageCircle className="h-4 w-4" aria-hidden />} variant="sapphire">
+                <Pill icon={<MessageCircle className="h-4 w-4" aria-hidden />} tone="sapphire">
                   Latest signals
                 </Pill>
                 <h3 className="mt-3 text-2xl font-semibold text-heading">Recent feedback that deserves attention</h3>

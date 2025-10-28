@@ -1,10 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
-import type { AuthLoginRequest, AuthRegisterRequest, AuthSuccessResponse, User } from '../../TYPES';
+import type { AuthLoginRequest, AuthRegisterRequest, AuthSuccessResponse, User } from '#types';
 import { ApiError, apiFetch } from './api';
 
-type AuthResult =
+export type AuthResult =
   | { success: true; user: User }
   | { success: false; message: string };
 

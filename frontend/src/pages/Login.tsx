@@ -27,13 +27,13 @@ export default function Login() {
     setError(null);
 
     const result = await login({ email, password });
-    if (!result.success) {
-      setError(result.message);
+    if (result.success) {
+      const redirectTo = state?.from?.pathname ?? '/app';
+      navigate(redirectTo, { replace: true });
       return;
     }
 
-    const redirectTo = state?.from?.pathname ?? '/app';
-    navigate(redirectTo, { replace: true });
+    setError(result.message);
   };
 
   return (

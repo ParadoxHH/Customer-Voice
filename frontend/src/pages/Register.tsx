@@ -28,12 +28,12 @@ export default function Register() {
       admin_invite: adminInvite || undefined,
     });
 
-    if (!result.success) {
-      setError(result.message);
+    if (result.success) {
+      navigate(result.user.is_admin ? '/admin' : '/app', { replace: true });
       return;
     }
 
-    navigate(result.user.is_admin ? '/admin' : '/app', { replace: true });
+    setError(result.message);
   };
 
   return (
