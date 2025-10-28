@@ -3,7 +3,7 @@ import { Check } from 'lucide-react';
 import type { HTMLAttributes } from 'react';
 import { Button } from './Button';
 
-type PlanTier = 'starter' | 'business' | 'pro';
+type PlanTier = 'trial' | 'starter' | 'business' | 'pro';
 
 export type PricingCardProps = HTMLAttributes<HTMLDivElement> & {
   tier: PlanTier;
@@ -13,9 +13,11 @@ export type PricingCardProps = HTMLAttributes<HTMLDivElement> & {
   href: string;
   features: ReadonlyArray<string>;
   popular?: boolean;
+  billingNote?: string;
 };
 
 const planLabels: Record<PlanTier, string> = {
+  trial: 'Free Trial',
   starter: 'Starter',
   business: 'Business',
   pro: 'Pro'
@@ -29,6 +31,7 @@ export function PricingCard({
   href,
   features,
   popular = false,
+  billingNote = '/month',
   className,
   ...props
 }: PricingCardProps) {
@@ -55,7 +58,7 @@ export function PricingCard({
         <div className="text-4xl font-semibold text-heading">
           {price}
           <span className="ml-2 text-base font-medium text-muted">
-            /month
+            {billingNote}
           </span>
         </div>
         <p className="text-sm text-muted">{description}</p>

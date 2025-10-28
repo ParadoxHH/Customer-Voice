@@ -78,10 +78,25 @@ const features = [
 
 const pricingPlans = [
   {
+    tier: 'trial' as const,
+    price: '$0',
+    billingNote: '14-day trial',
+    description: 'Experience every insight, no credit card required. Upgrade when you are ready for additional sources or competitor tracking.',
+    ctaLabel: 'Start free \u2013 upgrade later',
+    href: '/register',
+    features: [
+      '1 connected data source',
+      'Up to 500 reviews analysed',
+      'AI sentiment, topic clustering, and weekly digest',
+      'Competitive benchmarking unlocked on paid plans'
+    ],
+    popular: true
+  },
+  {
     tier: 'starter' as const,
     price: '$49',
     description: 'For emerging CX teams launching their customer voice programme.',
-    ctaLabel: 'Start Starter Plan',
+    ctaLabel: 'Upgrade to Starter',
     href: '#signup-starter',
     features: ['1 data source', 'Up to 500 reviews analysed per month', 'AI sentiment and topic analysis', 'Weekly praise and complaints digest'],
     popular: false
@@ -109,7 +124,7 @@ const pricingPlans = [
 export default function Landing() {
   const { user } = useAuth();
   const primaryCtaPath = user ? '/app' : '/register';
-  const primaryCtaLabel = user ? 'Go to your dashboard' : 'Create your account';
+  const primaryCtaLabel = user ? 'Go to your dashboard' : 'Start free for 14 days';
 
   const [testimonialIndex, setTestimonialIndex] = useState(0);
   const prefersReducedMotion = useReducedMotion();
@@ -157,7 +172,7 @@ export default function Landing() {
                     {primaryCtaLabel}
                   </Button>
                   <Button as="a" href="#pricing" variant="secondary" size="lg">
-                    See Pricing
+                    Connect Google or Yelp reviews
                   </Button>
                 </div>
               </div>
@@ -331,9 +346,14 @@ export default function Landing() {
             <p className="text-lg text-muted">
               Customer Voice Dashboard is built for fast-moving teams who want every decision backed by customer proof.
             </p>
-            <Button as={Link} to={primaryCtaPath} size="lg" endIcon={<ArrowRight className="h-5 w-5" aria-hidden />}>
-              {primaryCtaLabel}
-            </Button>
+            <div className="flex flex-col items-center gap-2">
+              <Button as={Link} to={primaryCtaPath} size="lg" endIcon={<ArrowRight className="h-5 w-5" aria-hidden />}>
+                {primaryCtaLabel}
+              </Button>
+              {!user ? (
+                <p className="text-sm text-muted">No credit card required. Connect Google or Yelp reviews in minutes.</p>
+              ) : null}
+            </div>
           </div>
         </Section>
       </main>

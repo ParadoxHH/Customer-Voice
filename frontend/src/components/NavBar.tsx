@@ -74,7 +74,7 @@ export function NavBar({ links }: NavBarProps) {
                 Log in
               </Button>
               <Button as={Link} to="/register" variant="primary" size="md">
-                Create account
+                Start free for 14 days
               </Button>
             </>
           )}
@@ -130,7 +130,7 @@ export function NavBar({ links }: NavBarProps) {
                 Log in
               </Button>
               <Button as={Link} to="/register" variant="primary" className="w-full" onClick={() => setOpen(false)}>
-                Create account
+                Start free for 14 days
               </Button>
             </>
           )}
