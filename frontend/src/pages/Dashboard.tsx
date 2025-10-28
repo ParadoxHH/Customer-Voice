@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { ArrowRight, BarChart3, BellRing, MessageCircle, Sparkles } from 'lucide-react';
 import { Container } from '../components/Container';
 import { Card } from '../components/Card';
@@ -6,8 +6,8 @@ import { Pill } from '../components/Pill';
 import { Button } from '../components/Button';
 import { GradientUnderline } from '../components/GradientUnderline';
 import { useAuth } from '../lib/auth';
-import { apiFetch, ApiError } from '../lib/api';
-import type { InsightsResponse, RecentReview, TopicDistributionItem } from '#types';
+import { useInsights } from '../lib/useInsights';
+import type { RecentReview, TopicDistributionItem } from '#types';
 
 type StatCard = { label: string; value: string; helper: string };
 type HighlightCard = { title: string; detail: string; action: string };
@@ -22,7 +22,7 @@ function truncate(text: string, length = 140): string {
   if (text.length <= length) {
     return text;
   }
-  return `${text.slice(0, length - 1)}…`;
+  return `${text.slice(0, length - 3)}...`;
 }
 
 function formatDate(dateIso: string): string {
@@ -34,51 +34,12 @@ function formatDate(dateIso: string): string {
 
 export default function Dashboard() {
   const { user, token } = useAuth();
-  const [insights, setInsights] = useState<InsightsResponse | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function fetchInsights() {
-      setLoading(true);
-      try {
-        const data = await apiFetch<InsightsResponse>('/insights?page_size=6', { token });
-        if (!isMounted) {
-          return;
-        }
-        setInsights(data);
-        setError(null);
-      } catch (err) {
-        if (!isMounted) {
-          return;
-        }
-        if (err instanceof ApiError) {
-          const message =
-            err.payload && typeof err.payload === 'object' && err.payload && 'message' in err.payload
-              ? String((err.payload as { message?: string }).message)
-              : err.message;
-          setError(message);
-        } else {
-          setError('Unable to load insights right now.');
-        }
-        setInsights(null);
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    fetchInsights();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [token]);
-
-  const hasReviewData = Boolean(insights && insights.pagination.total_items > 0);
+  const {
+    data: insights,
+    loading,
+    error,
+    hasData: hasReviewData,
+  } = useInsights({ token, enabled: Boolean(token), pageSize: 6 });
 
   const sourceLookup = useMemo(() => {
     if (!insights) {
@@ -97,12 +58,12 @@ export default function Dashboard() {
         },
         {
           label: 'Positive sentiment',
-          value: '—',
+          value: '--',
           helper: 'Sentiment trends appear after the first sync.',
         },
         {
           label: 'Needs attention',
-          value: '—',
+          value: '--',
           helper: 'Negative reviews will display here once data is flowing.',
         },
       ];
@@ -134,7 +95,7 @@ export default function Dashboard() {
       },
       {
         label: 'Positive sentiment',
-        value: totalSentimentTagged ? `${positiveShare}%` : '—',
+        value: totalSentimentTagged ? `${positiveShare}%` : '--',
         helper: totalSentimentTagged ? `${formatNumber(positive)} positive mentions` : 'Awaiting sentiment data',
       },
       {
@@ -251,7 +212,7 @@ export default function Dashboard() {
               ))}
               {loading ? (
                 <div className="md:col-span-3">
-                  <p className="rounded-2xl border border-border bg-section px-4 py-3 text-sm text-muted">Loading the latest insights…</p>
+                  <p className="rounded-2xl border border-border bg-section px-4 py-3 text-sm text-muted">Loading the latest insights...</p>
                 </div>
               ) : null}
             </div>
@@ -312,7 +273,7 @@ export default function Dashboard() {
               ) : (
                 <div className="rounded-2xl border border-border bg-section px-5 py-6 text-sm text-muted">
                   {loading
-                    ? 'Loading recent feedback…'
+                    ? 'Loading recent feedback...'
                     : 'Recent reviews will appear here as soon as data is synced. Try importing sample data from the admin portal.'}
                 </div>
               )}

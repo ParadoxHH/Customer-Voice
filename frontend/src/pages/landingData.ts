@@ -8,7 +8,7 @@ export type ImpactStat = {
   label: string;
 };
 
-export const impactStats: ImpactStat[] = [
+export const fallbackImpactStats: ImpactStat[] = [
   { value: '5 min', label: 'to publish your first insight summary' },
   { value: '4+ sources', label: 'connected by default across review platforms' },
   { value: '90-day', label: 'trendlines refreshed without manual effort' },

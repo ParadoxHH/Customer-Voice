@@ -30,8 +30,9 @@ import { TestimonialCard } from '../components/TestimonialCard';
 import { FadeIn, SlideUp } from '../components/Motion';
 import { LogoRow } from '../components/LogoRow';
 import { GradientUnderline } from '../components/GradientUnderline';
-import { impactStats, screenshotItems, testimonials, faqItems } from './landingData';
+import { fallbackImpactStats, screenshotItems, testimonials, faqItems } from './landingData';
 import { useAuth } from '../lib/auth';
+import { useInsights } from '../lib/useInsights';
 
 const navLinks = [
   { label: 'Features', href: '#features' },
@@ -75,6 +76,12 @@ const features = [
     icon: <Share2 className="h-7 w-7" aria-hidden />
   }
 ] as const;
+
+const numberFormatter = new Intl.NumberFormat();
+
+function formatNumber(value: number): string {
+  return numberFormatter.format(value);
+}
 
 const pricingPlans = [
   {
@@ -122,9 +129,56 @@ const pricingPlans = [
 ] as const;
 
 export default function Landing() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
+  const { data: insights, loading: insightsLoading, hasData: hasLiveMetrics } = useInsights({
+    token,
+    enabled: Boolean(token),
+    pageSize: 10
+  });
   const primaryCtaPath = user ? '/app' : '/register';
   const primaryCtaLabel = user ? 'Go to your dashboard' : 'Start free for 14 days';
+
+  const impactStats = useMemo(() => {
+    if (!user || !insights || !hasLiveMetrics) {
+      return fallbackImpactStats;
+    }
+
+    const totalReviews = insights.pagination.total_items;
+    const sourceCount = insights.source_breakdown.length;
+
+    let positive = 0;
+    let neutral = 0;
+    let negative = 0;
+    for (const point of insights.sentiment_trend) {
+      positive += point.positive;
+      neutral += point.neutral;
+      negative += point.negative;
+    }
+    const totalSentiment = positive + neutral + negative;
+    const positiveShare = totalSentiment ? Math.round((positive / totalSentiment) * 100) : null;
+
+    const totalTopicsAssigned = insights.topic_distribution.reduce((sum, item) => sum + item.review_count, 0);
+    const averageTopicsPerReview = totalReviews ? (totalTopicsAssigned / totalReviews).toFixed(1) : '0.0';
+
+    return [
+      {
+        value: formatNumber(totalReviews),
+        label: totalReviews === 1 ? 'review analysed across your workspace' : 'reviews analysed across your workspace'
+      },
+      {
+        value: formatNumber(sourceCount),
+        label: sourceCount === 1 ? 'source connected' : 'sources connected'
+      },
+      {
+        value: positiveShare !== null ? `${positiveShare}%` : '--',
+        label: 'reviews tagged positive'
+      },
+      {
+        value: averageTopicsPerReview,
+        label: 'average topics applied per review'
+      }
+    ];
+  }, [user, insights, hasLiveMetrics]);
 
   const [testimonialIndex, setTestimonialIndex] = useState(0);
   const prefersReducedMotion = useReducedMotion();
@@ -234,6 +288,15 @@ export default function Landing() {
           title="Proof that compounds quickly"
           description="Teams adopt Customer Voice to pinpoint opportunities faster, answer leadership questions with data, and keep improvements on track."
         >
+          {user ? (
+            <p className="mb-6 text-sm text-muted">
+              {insightsLoading
+                ? 'Loading your live workspace metrics...'
+                : hasLiveMetrics
+                  ? 'Live metrics pulled from your connected sources.'
+                  : 'Connect a data source to unlock live metrics in this view.'}
+            </p>
+          ) : null}
           <Grid variant="quad" gap="md">
             {impactStats.map((stat) => (
               <StatCard key={stat.label} value={stat.value} label={stat.label} />
