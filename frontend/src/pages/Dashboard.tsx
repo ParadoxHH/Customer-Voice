@@ -120,7 +120,7 @@ export default function Dashboard() {
     const cards: HighlightCard[] = [];
     const topTopic: TopicDistributionItem | undefined = insights.topic_distribution[0];
     const topSource = insights.source_breakdown[0];
-    const latestTrend = insights.sentiment_trend.at(-1);
+    const latestTrend = insights.sentiment_trend[\u205f::last];
 
     if (topTopic) {
       cards.push({
@@ -258,7 +258,7 @@ export default function Dashboard() {
                         <p className="text-sm text-heading">{summary}</p>
                         <p className="mt-1 text-xs text-muted">
                           Source: <span className="font-medium text-heading">{sourceName}</span>
-                          {item.published_at ? ` • ${formatDate(item.published_at)}` : null}
+                          {item.published_at ? `  ${formatDate(item.published_at)}` : null}
                         </p>
                       </div>
                       <span
@@ -284,3 +284,7 @@ export default function Dashboard() {
     </div>
   );
 }
+
+
+
+
