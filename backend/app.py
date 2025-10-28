@@ -30,8 +30,12 @@ def create_app() -> Flask:
     if not allowed_origin:
         raise RuntimeError("ALLOWED_ORIGIN environment variable must be set.")
 
+    allowed_origins = [origin.strip() for origin in allowed_origin.split(",") if origin.strip()]
+    if not allowed_origins:
+        raise RuntimeError("ALLOWED_ORIGIN must include at least one origin.")
+
     app.config["DATABASE_URL"] = database_url
-    app.config["ALLOWED_ORIGIN"] = allowed_origin
+    app.config["ALLOWED_ORIGIN"] = ",".join(allowed_origins)
     auth_secret = os.environ.get("AUTH_TOKEN_SECRET")
     if not auth_secret:
         raise RuntimeError("AUTH_TOKEN_SECRET environment variable must be set.")
@@ -48,7 +52,7 @@ def create_app() -> Flask:
 
     CORS(
         app,
-        origins=[allowed_origin],
+        origins=allowed_origins,
         methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Content-Type", "Authorization"],
         supports_credentials=False,

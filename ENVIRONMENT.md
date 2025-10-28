@@ -7,7 +7,7 @@
 | `OPENAI_API_KEY` | Optional | `sk-...` | Reserved for future LLM topic enrichment. |
 | `RESEND_API_KEY` or `SMTP_*` | Optional | `re_...` | Needed once email digests are enabled. |
 | `TOKEN_DIGEST_RUN` | Yes | `run_digest_prod_token` | Bearer token used by the scheduled digest workflow. |
-| `ALLOWED_ORIGIN` | Yes | `https://customer-voice.pages.dev` | Exact Cloudflare Pages URL. |
+| `ALLOWED_ORIGIN` | Yes | `https://customer-voice.pages.dev` | Comma-separated list of allowed origins (e.g. local + production Pages URL). |
 | `LOG_LEVEL` | Optional | `info` | Optional override for application logging. |
 | `AUTH_TOKEN_SECRET` | Yes | `super-secure-random-string` | Used to sign login tokens; generate at least 32 random characters. |
 | `ADMIN_INVITE_CODE` | Optional | `owner-signup-code` | Require this value to grant admin access during registration. |
