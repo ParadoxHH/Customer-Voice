@@ -120,7 +120,7 @@ export default function Dashboard() {
     const cards: HighlightCard[] = [];
     const topTopic: TopicDistributionItem | undefined = insights.topic_distribution[0];
     const topSource = insights.source_breakdown[0];
-    const latestTrend = insights.sentiment_trend[\u205f::last];
+    const latestTrend = insights.sentiment_trend.length ? insights.sentiment_trend[insights.sentiment_trend.length - 1] : undefined;
 
     if (topTopic) {
       cards.push({
