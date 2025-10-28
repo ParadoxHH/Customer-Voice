@@ -1,12 +1,13 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import { clsx } from 'clsx';
 
-type PillTone = 'gem' | 'emerald' | 'ruby';
+type PillTone = 'gem' | 'emerald' | 'ruby' | 'sapphire';
 
 const toneMap: Record<PillTone, string> = {
   gem: 'border border-border bg-section text-heading',
   emerald: 'border border-emerald/40 bg-emerald/10 text-emerald',
-  ruby: 'border border-ruby/40 bg-ruby/10 text-ruby'
+  ruby: 'border border-ruby/40 bg-ruby/10 text-ruby',
+  sapphire: 'border border-sapphire/40 bg-sapphire/10 text-sapphire'
 };
 
 export type PillProps = HTMLAttributes<HTMLSpanElement> & {

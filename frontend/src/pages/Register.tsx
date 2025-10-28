@@ -30,10 +30,9 @@ export default function Register() {
 
     if (result.success) {
       navigate(result.user.is_admin ? '/admin' : '/app', { replace: true });
-      return;
+    } else {
+      setError(result.message);
     }
-
-    setError(result.message);
   };
 
   return (

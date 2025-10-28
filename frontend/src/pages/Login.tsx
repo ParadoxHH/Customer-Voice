@@ -30,10 +30,9 @@ export default function Login() {
     if (result.success) {
       const redirectTo = state?.from?.pathname ?? '/app';
       navigate(redirectTo, { replace: true });
-      return;
+    } else {
+      setError(result.message);
     }
-
-    setError(result.message);
   };
 
   return (
